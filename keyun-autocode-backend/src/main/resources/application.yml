@@ -1,16 +1,32 @@
 spring:
   application:
     name: keyun-autocode-backend
+  data:
+    redis:
+      database: 2
+      host: 127.0.0.1
+      port: 6379
+      timeout: 10s
+      lettuce:
+        pool:
+          # 连接池最大连接数
+          max-active: 200
+          # 连接池最大阻塞等待时间（使用负值表示没有限制）
+          max-wait: -1ms
+          # 连接池中的最大空闲连接
+          max-idle: 10
+          # 连接池中的最小空闲连接
+          min-idle: 0
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/keyun_autocode?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: root
     password: 123456
 server:
   port: 8123
   servlet:
     context-path: /api
-# springdoc-openapi????
+# springdoc-openapi
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -22,8 +38,32 @@ springdoc:
     - group: 'default'
       paths-to-match: '/**'
       packages-to-scan: com.jstart.keyunautocodebackend.controller
-# knife4j???????????????
+# knife4j
 knife4j:
   enable: true
   setting:
     language: zh_cn
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true # 开启驼峰命名
+  global-config:
+    db-config:
+      logic-delete-field: is_deleted
+      logic-delete-value: now()
+      logic-not-delete-value: 'null'
+# 日志配置
+logging:
+  level:
+    # 替换为你的 mapper 接口所在的包路径
+    com.jstart.keyunautocodebackend.mapper: debug  # 输出该包下的 SQL 日志
+    # 可选：MyBatis 核心日志（如需更详细的信息）
+    #com.baomidou.mybatisplus: info
+
+
+# Sa-Token: https://sa-token.cc
+sa-token:
+  token-name: keyun
+  timeout: 2592000
+  token-style: uuid
+  is-log: true
