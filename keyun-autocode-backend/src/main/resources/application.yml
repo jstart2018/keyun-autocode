@@ -1,6 +1,8 @@
 spring:
   application:
     name: keyun-autocode-backend
+  profiles:
+    active: local # 激活环境，获取秘钥key
   data:
     redis:
       database: 2
@@ -22,6 +24,7 @@ spring:
     url: jdbc:mysql://localhost:3306/keyun_autocode?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: root
     password: 123456
+
 server:
   port: 8123
   servlet:
@@ -60,10 +63,23 @@ logging:
     # 可选：MyBatis 核心日志（如需更详细的信息）
     #com.baomidou.mybatisplus: info
 
-
 # Sa-Token: https://sa-token.cc
 sa-token:
   token-name: keyun
   timeout: 2592000
   token-style: uuid
   is-log: true
+
+# AI
+langchain4j:
+  open-ai:
+    chat-model:
+      base-url: https://api.deepseek.com/v1
+      api-key: ${DEEPSEEK_API_KEY}
+      model-name: deepseek-chat
+      log-requests: true
+      log-responses: true
+      max-tokens: 8192
+      strict-json-schema: true
+      response-format: json_object
+      max-retries: 3
