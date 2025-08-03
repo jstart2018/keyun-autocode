@@ -51,11 +51,11 @@ public class CodeFileSaver {
     }
 
     //保存单个文件
-    private static File saveFile(String dirPath, String fileName, String content) {
+    private static void saveFile(String dirPath, String fileName, String content) {
         //构建文件路径
         String filePath = dirPath + File.separator + fileName;//File.separator是获取系统默认的文件分隔符
         //保存文件
-        return FileUtil.writeString(content, filePath, StandardCharsets.UTF_8);
+        FileUtil.writeString(content, filePath, StandardCharsets.UTF_8);
 
     }
 

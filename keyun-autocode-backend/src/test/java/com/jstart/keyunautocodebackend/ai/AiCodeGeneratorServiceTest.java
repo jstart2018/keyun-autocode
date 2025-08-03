@@ -17,7 +17,7 @@ class AiCodeGeneratorServiceTest {
 
     @Test
     void chat() {
-        String resp = aiCodeGeneratorService.chat("帮我生成一个个人网站，包含首页、关于我、作品集和联系页面，数据使用静态数据");
+        String resp = aiCodeGeneratorService.chat("帮我生成一个个人网站，，数据使用静态数据，不超过50行代码");
         Assertions.assertNotNull(resp);
         System.out.println(resp);
     }
