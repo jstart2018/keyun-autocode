@@ -6,7 +6,7 @@ import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jstart.keyunautocodebackend.auth.RoleEnum;
-import com.jstart.keyunautocodebackend.constant.UserStatusEnum;
+import com.jstart.keyunautocodebackend.enums.UserStatusEnum;
 import com.jstart.keyunautocodebackend.exception.BusinessException;
 import com.jstart.keyunautocodebackend.exception.ThrowUtils;
 import com.jstart.keyunautocodebackend.model.ResultEnum;

@@ -1,4 +1,4 @@
-package com.jstart.keyunautocodebackend.constant;
+package com.jstart.keyunautocodebackend.enums;
 
 import lombok.Getter;
 
