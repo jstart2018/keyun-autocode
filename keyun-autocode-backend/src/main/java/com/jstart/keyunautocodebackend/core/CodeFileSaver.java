@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
  * 代码文件保存器
  * 用于将生成的代码保存到本地文件系统
  */
+@Deprecated
 public class CodeFileSaver {
     //文件保存的根目录
     private static final String SAVE_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output";
@@ -30,7 +31,7 @@ public class CodeFileSaver {
     //保存多文件代码
     public static File saveMultiFileCode(MultiFileCodeResult multiFileCodeResult){
         //构建文件的保存路径
-        String uploadDir = buildFilePath(CodeGenTypeEnum.HTML.getValue());
+        String uploadDir = buildFilePath(CodeGenTypeEnum.MULTI_FILE.getValue());
         //保存HTML代码
          saveFile(uploadDir, "index.html", multiFileCodeResult.getHtmlCode());
          saveFile(uploadDir, "style.css", multiFileCodeResult.getCssCode());
@@ -41,7 +42,7 @@ public class CodeFileSaver {
     }
 
 
-    //构建文件的唯一路径（tmp/code_output/bizType_雪花id
+    //构建文件的唯一路径并创建该文件夹（tmp/code_output/bizType_雪花id）
     private static String buildFilePath(String bizType) {
         String uniqueDirName = String.format("%s_%s",bizType,IdUtil.getSnowflakeNextIdStr());
         String uploadDir =  SAVE_ROOT_DIR + File.separator + uniqueDirName;

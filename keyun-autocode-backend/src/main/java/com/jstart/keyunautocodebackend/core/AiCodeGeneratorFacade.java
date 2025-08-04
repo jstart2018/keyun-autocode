@@ -4,6 +4,8 @@ package com.jstart.keyunautocodebackend.core;
 import com.jstart.keyunautocodebackend.ai.AiCodeGeneratorService;
 import com.jstart.keyunautocodebackend.ai.model.HtmlCodeResult;
 import com.jstart.keyunautocodebackend.ai.model.MultiFileCodeResult;
+import com.jstart.keyunautocodebackend.core.codeParser.CodeParserExecutor;
+import com.jstart.keyunautocodebackend.core.fileSaver.FileSaveExecutor;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.exception.BusinessException;
 import com.jstart.keyunautocodebackend.model.ResultEnum;
@@ -24,6 +26,9 @@ public class AiCodeGeneratorFacade {
     @Resource
     private AiCodeGeneratorService aiCodeGeneratorService;
 
+    @Resource
+    private AiCodeGeneratorService aiCodeGeneratorServiceStream;
+
     /**
      * 统一入口：根据用户输入的消息和代码生成类型，生成并保存代码文件
      * @param userMessage 用户提示词
@@ -35,8 +40,14 @@ public class AiCodeGeneratorFacade {
             throw new BusinessException(ResultEnum.PARAMS_ERROR, "代码生成类型不能为空");
         }
         return switch (codeGenTypeEnum) {
-            case HTML -> generateAndSaveHtmlCode(userMessage);
-            case MULTI_FILE -> generateAndSaveMultiFileeCode(userMessage);
+            case HTML -> {
+                HtmlCodeResult htmlCodeResult = aiCodeGeneratorService.generateHtmlCode(userMessage);
+                yield  FileSaveExecutor.executeSave(htmlCodeResult, codeGenTypeEnum);
+            }
+            case MULTI_FILE -> {
+                MultiFileCodeResult multiFileCodeResult = aiCodeGeneratorService.generateMultiFileCode(userMessage);
+                yield  FileSaveExecutor.executeSave(multiFileCodeResult, codeGenTypeEnum);
+            }
             default ->throw new BusinessException(ResultEnum.PARAMS_ERROR, "不支持的代码生成类型");
         };
     }
@@ -52,8 +63,14 @@ public class AiCodeGeneratorFacade {
             throw new BusinessException(ResultEnum.SYSTEM_ERROR, "生成类型为空");
         }
         return switch (codeGenTypeEnum) {
-            case HTML -> generateAndSaveHtmlCodeStream(userMessage);
-            case MULTI_FILE -> generateAndSaveMultiFileCodeStream(userMessage);
+            case HTML -> {
+                Flux<String> result = aiCodeGeneratorServiceStream.generateHtmlCodeStream(userMessage);
+                yield  parserAndSaveResult(result,codeGenTypeEnum);
+            }
+            case MULTI_FILE -> {
+                Flux<String> result = aiCodeGeneratorServiceStream.generateMultiFileCodeStream(userMessage);
+                yield parserAndSaveResult(result,codeGenTypeEnum);
+            }
             default -> {
                 String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
                 throw new BusinessException(ResultEnum.SYSTEM_ERROR, errorMessage);
@@ -62,64 +79,7 @@ public class AiCodeGeneratorFacade {
     }
 
 
-
-    /**
-     * 生成并保存HTML代码
-     * @param userMessage 用户提示词
-     * @return HTML文件目录
-     */
-    private File generateAndSaveHtmlCode(String userMessage) {
-        HtmlCodeResult htmlCodeResult = aiCodeGeneratorService.generateHtmlCode(userMessage);
-        return CodeFileSaver.saveHtmlCode(htmlCodeResult);
-    }
-
-    /**
-     * 生成并保存多文件代码
-     * @param userMessage 用户提示词
-     * @return 多文件代码目录
-     */
-    private File generateAndSaveMultiFileeCode(String userMessage) {
-        MultiFileCodeResult multiFileCodeResult = aiCodeGeneratorService.generateMultiFileCode(userMessage);
-        return CodeFileSaver.saveMultiFileCode(multiFileCodeResult);
-    }
-
-
-
-
-    /**
-     * 生成 HTML 模式的代码并保存（流式）
-     *
-     * @param userMessage 用户提示词
-     * @return 保存的目录
-     */
-    private Flux<String> generateAndSaveHtmlCodeStream(String userMessage) {
-        Flux<String> result = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
-        // 当流式返回生成代码完成后，再保存代码
-        StringBuilder codeBuilder = new StringBuilder();
-        return result
-                .doOnNext(codeBuilder::append) // 实时收集代码片段
-                .doOnComplete(() -> {
-                    // 流式返回完成后保存代码
-                    try {
-                        String completeHtmlCode = codeBuilder.toString();
-                        HtmlCodeResult htmlCodeResult = CodeParser.parseHtmlCode(completeHtmlCode);
-                        // 保存代码到文件
-                        File savedDir = CodeFileSaver.saveHtmlCode(htmlCodeResult);
-                        log.info("保存成功，路径为：" + savedDir.getAbsolutePath());
-                    } catch (Exception e) {
-                        log.error("保存失败: {}", e.getMessage());
-                    }
-                });
-    }
-
-    /**
-     * 生成多文件模式的代码并保存（流式）
-     *
-     * @param userMessage 用户提示词
-     * @return 保存的目录
-     */
-    private Flux<String> generateAndSaveMultiFileCodeStream(String userMessage) {
-        Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
+    private static Flux<String> parserAndSaveResult(Flux<String> result,CodeGenTypeEnum codeGenTypeEnum) {
         // 当流式返回生成代码完成后，再保存代码
         StringBuilder codeBuilder = new StringBuilder();
         // 实时收集代码片段
@@ -129,18 +89,15 @@ public class AiCodeGeneratorFacade {
                     // 流式返回完成后保存代码
                     try {
                         String completeMultiFileCode = codeBuilder.toString();
-                        MultiFileCodeResult multiFileResult = CodeParser.parseMultiFileCode(completeMultiFileCode);
-                        // 保存代码到文件
-                        File savedDir = CodeFileSaver.saveMultiFileCode(multiFileResult);
+                        // 使用解析器解析AI结果到 对象中
+                        Object multiFileResult = CodeParserExecutor.executeParser(completeMultiFileCode, codeGenTypeEnum);
+                        // 使用解析器 保存代码到文件
+                        File savedDir = FileSaveExecutor.executeSave(multiFileResult, codeGenTypeEnum);
                         log.info("保存成功，路径为：" + savedDir.getAbsolutePath());
                     } catch (Exception e) {
                         log.error("保存失败: {}", e.getMessage());
                     }
                 });
     }
-
-
-
-
 
 }

@@ -42,7 +42,7 @@ public interface AiCodeGeneratorService {
      * @param userMessage 用户提示词
      * @return 多文件代码结果
      */
-    @SystemMessage(value = "你是一个专业的前端开发工程师，可以使用原生html、css、js三个技术栈进行开发。请根据用户的需求生成相应的代码。")
+    @SystemMessage(value = "你是一个专业的前端开发工程师，只能且必须要使用原生html、css、js三个技术栈进行开发，并且html、css、js要用放在不同的文件。请根据用户的需求生成相应的代码。")
     Flux<String> generateMultiFileCodeStream(String userMessage);
 
 
