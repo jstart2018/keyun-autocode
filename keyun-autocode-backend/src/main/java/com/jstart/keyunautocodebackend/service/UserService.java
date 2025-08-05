@@ -20,11 +20,13 @@ public interface UserService extends IService<User> {
 
     Long register(UserDTO userDTO);
 
-    UserVO getLoginUser();
+    User getLoginUser();
 
     Long addUser(UserDTO userDTO);
 
     UserVO editUser(UserDTO userDTO);
+
+    UserVO getUserVO(User user);
 
     void checkUserInfo(UserDTO userDTO);
 }

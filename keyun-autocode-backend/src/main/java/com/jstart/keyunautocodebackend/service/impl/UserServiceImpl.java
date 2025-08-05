@@ -113,11 +113,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
 
     @Override
-    public UserVO getLoginUser() {
+    public User getLoginUser() {
         Long loginId = Long.parseLong(StpUtil.getLoginId().toString());
         ThrowUtils.throwIf(loginId == null, ResultEnum.NOT_LOGIN_ERROR, "用户未登录");
-        User user = this.getOne(new QueryWrapper<User>().lambda().eq(User::getId, loginId));
-        return userToUserVO(user);
+        return this.getOne(new QueryWrapper<User>().lambda().eq(User::getId, loginId));
     }
 
 
@@ -155,6 +154,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         UserVO uv = new UserVO();
         BeanUtils.copyProperties(u, uv);
         return uv;
+    }
+
+    @Override
+    public UserVO getUserVO(User user) {
+    if (user == null) {
+        return null;
+    }
+    UserVO uservo = new UserVO();
+        BeanUtils.copyProperties(user, uservo);
+        return uservo;
     }
 
     /**

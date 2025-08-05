@@ -37,3 +37,27 @@ CREATE TABLE `user` (
                             KEY `idx_is_deleted` (`is_deleted`) COMMENT '逻辑删除索引（方便查询未删除或已删除用户）'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户表';
 
+
+-- 应用表
+create table app
+(
+    id           bigint auto_increment comment 'id' primary key,
+    appName      varchar(256)                       null comment '应用名称',
+    cover        varchar(512)                       null comment '应用封面',
+    init_prompt   text                               null comment '应用初始化的 prompt',
+    code_gen_type  varchar(64)                        null comment '代码生成类型（枚举）',
+    deploy_key    varchar(64)                        null comment '部署标识',
+    deployed_time datetime                           null comment '部署时间',
+    priority     int      default 0                 not null comment '优先级',
+    user_id       bigint                             not null comment '创建用户id',
+    edit_time     datetime default CURRENT_TIMESTAMP not null comment '编辑时间',
+    create_time   datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time   datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    is_delete     datetime DEFAULT NULL COMMENT '逻辑删除标识（NULL-未删除，非NULL-删除时间）',
+    UNIQUE KEY uk_deploy_key (deploy_key), -- 确保部署标识唯一
+    INDEX idx_appName (appName),         -- 提升基于应用名称的查询性能
+    INDEX idx_user_id (user_id)            -- 提升基于用户 ID 的查询性能
+) comment '应用' collate = utf8mb4_unicode_ci;
+
+
+

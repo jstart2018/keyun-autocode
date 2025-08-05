@@ -6,10 +6,12 @@ import com.jstart.keyunautocodebackend.exception.ThrowUtils;
 import com.jstart.keyunautocodebackend.model.Result;
 import com.jstart.keyunautocodebackend.model.ResultEnum;
 import com.jstart.keyunautocodebackend.model.dto.UserDTO;
+import com.jstart.keyunautocodebackend.model.entity.User;
 import com.jstart.keyunautocodebackend.model.vo.UserVO;
 import com.jstart.keyunautocodebackend.service.UserService;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -38,7 +40,9 @@ public class UserController {
 
     @GetMapping("/getLoginUser")
     public Result<UserVO> getLoginUser() {
-        UserVO userVO = userService.getLoginUser();
+        User loginUser = userService.getLoginUser();
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(loginUser, userVO);
 
         return Result.success(userVO);
     }
