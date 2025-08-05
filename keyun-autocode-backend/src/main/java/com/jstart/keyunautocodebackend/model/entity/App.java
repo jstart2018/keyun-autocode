@@ -1,9 +1,7 @@
 package com.jstart.keyunautocodebackend.model.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Date;
@@ -81,6 +79,7 @@ public class App implements Serializable {
     /**
      * 逻辑删除标识（NULL-未删除，非NULL-删除时间）
      */
+    @TableLogic
     private LocalDateTime isDelete;
 
     @TableField(exist = false)
