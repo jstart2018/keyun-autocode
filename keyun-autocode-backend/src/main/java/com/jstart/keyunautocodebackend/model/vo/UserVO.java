@@ -7,15 +7,20 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 /**
  * 用户表
  * @TableName user
  */
-@TableName(value ="user")
 @Data
 public class UserVO implements Serializable {
+    /**
+     * id
+     */
+    private Long id;
+
     /**
      * 账号
      */
@@ -27,50 +32,24 @@ public class UserVO implements Serializable {
     private String username;
 
     /**
-     * 性别（0-未知，1-男，2-女）
-     */
-    private Integer sex;
-
-    /**
      * 头像URL
      */
     private String avatar;
 
     /**
-     * 状态（0-禁用，1-正常）
-     */
-    private Integer status;
-
-    /**
      * 用户类型（0-超级管理员，1-管理员，2-普通用户）
      */
-    private Integer userType;
-
-    /**
-     * 所属部门ID
-     */
-    private Long deptId;
+    private String role;
 
     /**
      * 创建时间
      */
-    private Date createTime;
+    private LocalDateTime createTime;
 
     /**
      * 编辑时间
      */
-    private Date editTime;
-
-
-    /**
-     * 创建人ID
-     */
-    private Long createBy;
-
-    /**
-     * 更新人ID
-     */
-    private Long editBy;
+    private LocalDateTime updateTime;
 
 
     /**

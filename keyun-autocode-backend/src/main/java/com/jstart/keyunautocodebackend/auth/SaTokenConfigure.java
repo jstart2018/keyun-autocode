@@ -9,12 +9,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class SaTokenConfigure implements WebMvcConfigurer {
+    // 注册 Sa-Token 拦截器，打开注解式鉴权功能
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // 注册 Sa-Token 拦截器，定义详细认证规则 
-        registry.addInterceptor(new SaInterceptor(handler -> {
-            // 根据路由划分模块，不同模块不同鉴权 
-            SaRouter.match("/admin/**", r -> StpUtil.checkRole(RoleEnum.ADMIN.getValue()));
-        })).addPathPatterns("/**");
+        // 注册 Sa-Token 拦截器，打开注解式鉴权功能
+        registry.addInterceptor(new SaInterceptor()).addPathPatterns("/**");
     }
 }
+

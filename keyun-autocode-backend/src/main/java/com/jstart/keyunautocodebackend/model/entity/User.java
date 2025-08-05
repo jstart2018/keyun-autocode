@@ -73,7 +73,7 @@ public class User implements Serializable {
     /**
      * 最后登录时间
      */
-    private Date lastLoginTime;
+    private LocalDateTime lastLoginTime;
 
     /**
      * 最后登录IP
@@ -83,17 +83,17 @@ public class User implements Serializable {
     /**
      * 创建时间
      */
-    private Date createTime;
+    private LocalDateTime createTime;
 
     /**
      * 编辑时间
      */
-    private Date editTime;
+    private LocalDateTime editTime;
 
     /**
      * 更新时间
      */
-    private Date updateTime;
+    private LocalDateTime updateTime;
 
     /**
      * 创建人ID

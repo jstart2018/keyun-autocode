@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
  *
  * @author jstart
  */
+@Deprecated
 public class CodeParser {
 
     // 正则表达式模式，用于匹配代码块

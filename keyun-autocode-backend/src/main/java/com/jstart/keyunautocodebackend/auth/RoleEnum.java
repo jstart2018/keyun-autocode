@@ -2,6 +2,8 @@ package com.jstart.keyunautocodebackend.auth;
 
 import lombok.Getter;
 
+import java.util.Objects;
+
 @Getter
 public enum RoleEnum {
 
@@ -20,6 +22,15 @@ public enum RoleEnum {
     public static RoleEnum getByKey(int key) {
         for (RoleEnum roleEnum : RoleEnum.values()) {
             if (roleEnum.getKey() == key) {
+                return roleEnum;
+            }
+        }
+        return null;
+    }
+
+    public static RoleEnum getByValue(String value) {
+        for (RoleEnum roleEnum : RoleEnum.values()) {
+            if (Objects.equals(roleEnum.getValue(), value)) {
                 return roleEnum;
             }
         }

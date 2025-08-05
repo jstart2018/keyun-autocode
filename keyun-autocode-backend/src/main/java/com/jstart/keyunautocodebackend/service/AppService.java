@@ -17,15 +17,17 @@ import java.util.List;
 */
 public interface AppService extends IService<App> {
 
+    QueryWrapper<App> getQueryWrapper(AppQueryRequest appQueryRequest);
+
     Long createApp(String initPrompt);
 
     void updateAppById(App app);
 
     void removeAppById(Long appId);
 
-    AppVO getAppVO(App app);
+    boolean removeAppByUserId(Long userId);
 
-    QueryWrapper<App> getQueryWrapper(AppQueryRequest appQueryRequest);
+    AppVO getAppVO(App app);
 
     List<AppVO> getAppVOList(List<App> appList);
 

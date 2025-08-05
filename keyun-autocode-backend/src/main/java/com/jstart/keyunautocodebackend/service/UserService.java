@@ -1,8 +1,10 @@
 package com.jstart.keyunautocodebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.jstart.keyunautocodebackend.model.dto.UserDTO;
-import com.jstart.keyunautocodebackend.model.dto.UserQueryByAdmin;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.jstart.keyunautocodebackend.model.dto.user.UserAddRequest;
+import com.jstart.keyunautocodebackend.model.dto.user.UserQueryRequest;
+import com.jstart.keyunautocodebackend.model.dto.user.UserUpdateRequest;
 import com.jstart.keyunautocodebackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jstart.keyunautocodebackend.model.vo.UserVO;
@@ -14,19 +16,23 @@ import com.jstart.keyunautocodebackend.model.vo.UserVO;
 */
 public interface UserService extends IService<User> {
 
-    QueryWrapper<User> getQueryWrapper(UserQueryByAdmin userQueryByAdmin);
+    QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
 
-    Long doLogin(String userAccount, String password);
+    UserVO doLogin(String userAccount, String password);
 
-    Long register(UserDTO userDTO);
+    Long register(String userAccount, String password, String checkPassword);
 
     User getLoginUser();
 
-    Long addUser(UserDTO userDTO);
-
-    UserVO editUser(UserDTO userDTO);
+    void updateUser(UserUpdateRequest userUpdateRequest);
 
     UserVO getUserVO(User user);
 
-    void checkUserInfo(UserDTO userDTO);
+    Long addUser(UserAddRequest userAddRequest);
+
+    void RegisterInfoCheck(String userAccount, String userPassword, String checkPassword);
+
+    Page<UserVO> getUserVOByPage(UserQueryRequest userQueryRequest);
+
+    void deleteUserById(Long id);
 }

@@ -1,6 +1,7 @@
 package com.jstart.keyunautocodebackend.controller;
 
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jstart.keyunautocodebackend.constant.AppConstant;
@@ -124,7 +125,7 @@ public class AppController {
      * @param deleteRequest 删除请求
      * @return 删除结果
      */
-    //todo：未鉴权，后续补充改造satoken的鉴权为注解鉴权
+    @SaCheckRole("admin")
     @PostMapping("/admin/delete")
     public Result<Boolean> deleteAppByAdmin(@RequestBody DeleteRequest deleteRequest) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
@@ -145,7 +146,7 @@ public class AppController {
      * @param appAdminUpdateRequest 更新请求
      * @return 更新结果
      */
-    //todo：未鉴权，后续补充改造satoken的鉴权为注解鉴权
+    @SaCheckRole("admin")
     @PostMapping("/admin/update")
     public Result<Boolean> updateAppByAdmin(@RequestBody AppAdminUpdateRequest appAdminUpdateRequest) {
         if (appAdminUpdateRequest == null || appAdminUpdateRequest.getId() <= 0) {
@@ -164,6 +165,7 @@ public class AppController {
      * @return 应用列表
      */
     @PostMapping("/admin/list/page/vo")
+    @SaCheckRole("admin")
     public Result<Page<AppVO>> listAppVOByPageByAdmin(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
 
@@ -182,6 +184,7 @@ public class AppController {
      * @param id 应用 id
      * @return 应用详情
      */
+    @SaCheckRole("admin")
     @GetMapping("/admin/get/vo")
     public Result<AppVO> getAppVOByIdByAdmin(long id) {
         ThrowUtils.throwIf(id <= 0, ResultEnum.PARAMS_ERROR, "应用 id 不能为空");

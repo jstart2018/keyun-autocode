@@ -3,6 +3,7 @@ package com.jstart.keyunautocodebackend.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jstart.keyunautocodebackend.auth.RoleEnum;
@@ -42,6 +43,43 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
 
     @Resource
     private UserService userService;
+
+
+    /**
+     * 获取查询条件
+     * @param appQueryRequest 查询请求参数
+     * @return QueryWrapper<App> 查询条件包装器
+     */
+    @Override
+    public QueryWrapper<App> getQueryWrapper(AppQueryRequest appQueryRequest) {
+        Long id = appQueryRequest.getId();
+        String appName = appQueryRequest.getAppName();
+        String cover = appQueryRequest.getCover();
+        String initPrompt = appQueryRequest.getInitPrompt();
+        String codeGenType = appQueryRequest.getCodeGenType();
+        String deployKey = appQueryRequest.getDeployKey();
+        Integer priority = appQueryRequest.getPriority();
+        Long userId = appQueryRequest.getUserId();
+        String sortField = appQueryRequest.getSortField();
+        String sortOrder = appQueryRequest.getSortOrder();
+
+        QueryWrapper<App> queryWrapper = new QueryWrapper<>();
+        queryWrapper
+                .eq(id != null, "id", id)
+                .like(StrUtil.isNotBlank(appName), "app_name", appName)
+                .like(StrUtil.isNotBlank(cover), "cover", cover)
+                .like(StrUtil.isNotBlank(initPrompt), "init_prompt", initPrompt)
+                .eq(StrUtil.isNotBlank(codeGenType), "code_gen_type", codeGenType)
+                .eq(StrUtil.isNotBlank(deployKey), "deploy_key", deployKey)
+                .eq(priority != null, "priority", priority)
+                .eq(userId != null, "user_id", userId)
+                .orderBy(StrUtil.isNotBlank(sortField),
+                        sortOrder != null && sortOrder.equals("ascend"),
+                        StrUtil.toUnderlineCase(sortField));
+
+
+        return queryWrapper;
+    }
 
 
     @Override
@@ -98,6 +136,18 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
 
     }
 
+    /**
+     * 根据用户ID删除该用户的所有应用（内部没有鉴权，需要提前鉴权）
+     *
+     * @param userId 用户ID
+     */
+    @Override
+    public boolean removeAppByUserId(Long userId) {
+        LambdaUpdateWrapper<App> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(App::getUserId, userId);
+        return this.remove(updateWrapper);
+    }
+
     @Override
     public AppVO getAppVO(App app) {
         if (app == null) {
@@ -111,42 +161,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         appVO.setUser(userVO);
 
         return appVO;
-    }
-
-    /**
-     * 获取查询条件
-     * @param appQueryRequest 查询请求参数
-     * @return QueryWrapper<App> 查询条件包装器
-     */
-    @Override
-    public QueryWrapper<App> getQueryWrapper(AppQueryRequest appQueryRequest) {
-        Long id = appQueryRequest.getId();
-        String appName = appQueryRequest.getAppName();
-        String cover = appQueryRequest.getCover();
-        String initPrompt = appQueryRequest.getInitPrompt();
-        String codeGenType = appQueryRequest.getCodeGenType();
-        String deployKey = appQueryRequest.getDeployKey();
-        Integer priority = appQueryRequest.getPriority();
-        Long userId = appQueryRequest.getUserId();
-        String sortField = appQueryRequest.getSortField();
-        String sortOrder = appQueryRequest.getSortOrder();
-
-        QueryWrapper<App> queryWrapper = new QueryWrapper<>();
-        queryWrapper
-                .eq(id != null, "id", id)
-                .like(StrUtil.isNotBlank(appName), "app_name", appName)
-                .like(StrUtil.isNotBlank(cover), "cover", cover)
-                .like(StrUtil.isNotBlank(initPrompt), "init_prompt", initPrompt)
-                .eq(StrUtil.isNotBlank(codeGenType), "code_gen_type", codeGenType)
-                .eq(StrUtil.isNotBlank(deployKey), "deploy_key", deployKey)
-                .eq(priority != null, "priority", priority)
-                .eq(userId != null, "user_id", userId)
-                .orderBy(StrUtil.isNotBlank(sortField),
-                        sortOrder != null && sortOrder.equals("asc"),
-                        StrUtil.toUnderlineCase(sortField));
-
-
-        return queryWrapper;
     }
 
 
