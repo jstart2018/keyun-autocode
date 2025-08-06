@@ -7,6 +7,7 @@ import com.jstart.keyunautocodebackend.model.dto.app.AppQueryRequest;
 import com.jstart.keyunautocodebackend.model.entity.App;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jstart.keyunautocodebackend.model.vo.AppVO;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 
@@ -16,6 +17,8 @@ import java.util.List;
 * @createDate 2025-08-05 10:27:52
 */
 public interface AppService extends IService<App> {
+
+    Flux<String> genAppCode(String userMessage, Long appId);
 
     QueryWrapper<App> getQueryWrapper(AppQueryRequest appQueryRequest);
 

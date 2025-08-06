@@ -3,6 +3,8 @@ package com.jstart.keyunautocodebackend.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jstart.keyunautocodebackend.constant.AppConstant;
 import com.jstart.keyunautocodebackend.exception.BusinessException;
@@ -20,9 +22,13 @@ import com.jstart.keyunautocodebackend.service.AppService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/app")
@@ -34,16 +40,46 @@ public class AppController {
 
     @PostMapping("/add")
     public Result<Long> createApp(@RequestBody AppAddRequest appAddRequest) {
-        ThrowUtils.throwIf(appAddRequest == null, ResultEnum.PARAMS_ERROR,"请求参数不能为空");
+        ThrowUtils.throwIf(appAddRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
         Long appId = appService.createApp(appAddRequest.getInitPrompt());
         return Result.success(appId);
     }
 
 
+    /**
+     * 生成应用代码（流式）
+     *
+     * @param appId   应用ID
+     * @param message 用户消息
+     * @return 响应流
+     */
+    @GetMapping("/chat/get/code")
+    public Flux<ServerSentEvent<String>> genAppCode(@RequestParam Long appId, @RequestParam String message) {
+        ThrowUtils.throwIf(appId == null || appId < 0, ResultEnum.PARAMS_ERROR, "请输入正确的应用 id");
+        ThrowUtils.throwIf(StrUtil.isBlank(message), ResultEnum.PARAMS_ERROR, "用户消息不能为空");
+
+        return appService.genAppCode(message, appId)
+                .map(content -> {
+                    //将内容封装成 json格式
+                    Map<String, String> data = Map.of("d", content);
+                    //转成 json 字符串
+                    String dataJson = JSONUtil.toJsonStr(data);
+                    return ServerSentEvent.<String>builder()
+                            .data(dataJson)
+                            .build();
+                })
+                .concatWith(Mono
+                        .just(ServerSentEvent.<String>builder()
+                                .event("done")
+                                .data("")
+                                .build()));
+    }
+
+
     @PostMapping("/update")
     public Result<Boolean> updateApp(@RequestBody AppUpdateRequest appUpdateRequest) {
-        ThrowUtils.throwIf(appUpdateRequest == null, ResultEnum.PARAMS_ERROR,"请求参数不能为空");
-        ThrowUtils.throwIf(appUpdateRequest.getId() == null,ResultEnum.PARAMS_ERROR,"应用 id 不能为空");
+        ThrowUtils.throwIf(appUpdateRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
+        ThrowUtils.throwIf(appUpdateRequest.getId() == null, ResultEnum.PARAMS_ERROR, "应用 id 不能为空");
 
         App app = new App();
         BeanUtils.copyProperties(appUpdateRequest, app);
@@ -56,7 +92,7 @@ public class AppController {
 
     @PostMapping("/delete")
     public Result<Boolean> deleteApp(@RequestBody DeleteRequest deleteRequest) {
-        ThrowUtils.throwIf(deleteRequest == null, ResultEnum.PARAMS_ERROR,"请求参数不能为空");
+        ThrowUtils.throwIf(deleteRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
 
         appService.removeAppById(deleteRequest.getId());
 
@@ -65,21 +101,23 @@ public class AppController {
 
     /**
      * 根据应用id获取应用信息
+     *
      * @param id 应用id
      * @return 应用信息
      */
     @GetMapping("/get/vo")
     public Result<AppVO> getAppVO(@RequestParam Long id) {
-        ThrowUtils.throwIf(id == null, ResultEnum.PARAMS_ERROR,"应用 id 不能为空");
+        ThrowUtils.throwIf(id == null, ResultEnum.PARAMS_ERROR, "应用 id 不能为空");
 
         App app = appService.getById(id);
-        ThrowUtils.throwIf(app == null, ResultEnum.NOT_FOUND_ERROR,"应用不存在");
+        ThrowUtils.throwIf(app == null, ResultEnum.NOT_FOUND_ERROR, "应用不存在");
 
         return Result.success(appService.getAppVO(app));
     }
 
     /**
      * 分页获取当前用户的应用列表
+     *
      * @param appQueryRequest 应用查询请求参数
      * @return 应用列表
      */
@@ -161,6 +199,7 @@ public class AppController {
     /**
      * 管理员分页获取应用列表
      * （可选鉴权，因为在service已经鉴权了，这里其实和用户分页查询的逻辑代码一样的，只是url不同）
+     *
      * @param appQueryRequest 查询请求
      * @return 应用列表
      */
@@ -194,8 +233,6 @@ public class AppController {
 
         return Result.success(appService.getAppVO(app));
     }
-
-
 
 
 }

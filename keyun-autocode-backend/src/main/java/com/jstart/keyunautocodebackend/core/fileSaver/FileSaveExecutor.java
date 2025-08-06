@@ -23,12 +23,13 @@ public class FileSaveExecutor {
      * 执行代码保存
      * @param codeResult 生成的代码内容，结构化后的封装对象
      * @param codeGenTypeEnum 代码生成类型枚举
+     * @param appId 应用ID，用于构建唯一文件目录
      * @return 保存后的文件目录
      */
-    public static File executeSave(Object codeResult, CodeGenTypeEnum codeGenTypeEnum) {
+    public static File executeSave(Object codeResult, CodeGenTypeEnum codeGenTypeEnum,Long appId) {
         return switch (codeGenTypeEnum) {
-            case HTML -> htmlCodeFileSave.codeSave((HtmlCodeResult) codeResult);
-            case MULTI_FILE -> multiCodeFileSave.codeSave((MultiFileCodeResult) codeResult);
+            case HTML -> htmlCodeFileSave.codeSave((HtmlCodeResult) codeResult,appId);
+            case MULTI_FILE -> multiCodeFileSave.codeSave((MultiFileCodeResult) codeResult,appId);
             default -> throw new BusinessException(ResultEnum.PARAMS_ERROR,"没有这种生成模式: " + codeGenTypeEnum);
         };
 

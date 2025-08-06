@@ -19,16 +19,17 @@ public abstract class FileSaveTemplate<T> {
     /**
      * 代码保存模板方法
      * @param codeResult 生成的代码内容，结构化后的封装对象
+     * @param appId 应用ID，用于构建唯一文件目录
      * @return 保存后的 文件目录
      */
-    public final File codeSave(T codeResult) {
+    public final File codeSave(T codeResult,Long appId) {
 
         // 校验输入
         checkInput(codeResult);
 
         //构建文件保存路径
         CodeGenTypeEnum codeGenType = getCodeGenType();
-        String uploadPath = buildFilePath(codeGenType.getValue());
+        String uploadPath = buildFilePath(codeGenType.getValue(),appId);
 
         //保存代码（子类实现具体保存逻辑）
         return writeCodeToFile(codeResult, uploadPath);
@@ -45,9 +46,9 @@ public abstract class FileSaveTemplate<T> {
     protected abstract File writeCodeToFile(T codeResult, String uploadPath);
 
 
-    //模板专用 构建文件的唯一路径并创建该文件夹（tmp/code_output/bizType_雪花id）
-    private static String buildFilePath(String bizType) {
-        String uniqueDirName = String.format("%s_%s", bizType, IdUtil.getSnowflakeNextIdStr());
+    //模板专用 构建文件的唯一路径并创建该文件夹（tmp/code_output/{bizType}_appId）
+    private static String buildFilePath(String bizType,Long appId) {
+        String uniqueDirName = String.format("%s_%s", bizType, appId);
         String uploadDir = SAVE_ROOT_DIR + File.separator + uniqueDirName;
         FileUtil.mkdir(uploadDir); //创建目录
         return uploadDir;

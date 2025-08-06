@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jstart.keyunautocodebackend.auth.RoleEnum;
 import com.jstart.keyunautocodebackend.constant.AppConstant;
+import com.jstart.keyunautocodebackend.core.AiCodeGeneratorFacade;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.exception.ThrowUtils;
 import com.jstart.keyunautocodebackend.model.ResultEnum;
@@ -23,7 +24,9 @@ import com.jstart.keyunautocodebackend.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,21 +35,52 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
-* @author 28435
-* @description 针对表【app(应用)】的数据库操作Service实现
-* @createDate 2025-08-05 10:27:52
-*/
+ * @author 28435
+ * @description 针对表【app(应用)】的数据库操作Service实现
+ * @createDate 2025-08-05 10:27:52
+ */
 @Service
 @Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>
-    implements AppService{
+        implements AppService {
 
     @Resource
     private UserService userService;
+    @Resource
+    private AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
 
     /**
+     * 生成应用代码（流式）
+     * @param userMessage 用户提示词
+     * @param appId 应用ID
+     * @return 响应流
+     */
+    @Override
+    public Flux<String> genAppCode(String userMessage, Long appId) {
+        //校验参数
+        ThrowUtils.throwIf(StrUtil.isBlank(userMessage), ResultEnum.PARAMS_ERROR, "用户消息不能为空");
+        ThrowUtils.throwIf(appId == null || appId < 0, ResultEnum.PARAMS_ERROR, "用户消息不能为空");
+
+        // 校验app是否存在
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ResultEnum.NOT_FOUND_ERROR, "应用不存在");
+
+        // 校验权限（是否为应用的创建者）
+        ThrowUtils.throwIf(!app.getUserId().equals(userService.getLoginUser().getId()),
+                ResultEnum.NO_AUTH_ERROR, "无权限操作该应用");
+
+        //校验代码生成类型
+        CodeGenTypeEnum genTypeEnum = CodeGenTypeEnum.getByValue(app.getCodeGenType());
+        ThrowUtils.throwIf(genTypeEnum == null, ResultEnum.PARAMS_ERROR, "不支持的代码生成类型");
+
+        // 调用AI代码生成器（门面类）
+        return aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, genTypeEnum, appId);
+    }
+
+    /**
      * 获取查询条件
+     *
      * @param appQueryRequest 查询请求参数
      * @return QueryWrapper<App> 查询条件包装器
      */
@@ -84,7 +118,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
 
     @Override
     public Long createApp(String initPrompt) {
-        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ResultEnum.PARAMS_ERROR,"应用初始化的 prompt 不能为空");
+        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ResultEnum.PARAMS_ERROR, "应用初始化的 prompt 不能为空");
         App app = new App();
         app.setInitPrompt(initPrompt);
         app.setUserId(userService.getLoginUser().getId());
@@ -94,21 +128,21 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
 
 
-        ThrowUtils.throwIf(!this.save(app), ResultEnum.SYSTEM_ERROR,"应用创建失败");
+        ThrowUtils.throwIf(!this.save(app), ResultEnum.SYSTEM_ERROR, "应用创建失败");
 
         return app.getId();
     }
 
     @Override
     public void updateAppById(App app) {
-        ThrowUtils.throwIf(app == null || app.getId() == null, ResultEnum.PARAMS_ERROR,"应用信息不能为空");
+        ThrowUtils.throwIf(app == null || app.getId() == null, ResultEnum.PARAMS_ERROR, "应用信息不能为空");
 
         // 校验应用是否存在
         App oldApp = this.getById(app.getId());
-        ThrowUtils.throwIf(oldApp == null, ResultEnum.NOT_FOUND_ERROR,"应用不存在");
+        ThrowUtils.throwIf(oldApp == null, ResultEnum.NOT_FOUND_ERROR, "应用不存在");
         // 校验是否为应用的创建者
         User loginUser = userService.getLoginUser();
-        ThrowUtils.throwIf(!oldApp.getUserId().equals(loginUser.getId()), ResultEnum.NO_AUTH_ERROR,"无权限操作该应用");
+        ThrowUtils.throwIf(!oldApp.getUserId().equals(loginUser.getId()), ResultEnum.NO_AUTH_ERROR, "无权限操作该应用");
 
         app.setEditTime(LocalDateTime.now());
         boolean result = this.updateById(app);
@@ -121,13 +155,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
     @Override
     public void removeAppById(Long appId) {
 
-        ThrowUtils.throwIf(appId == null, ResultEnum.PARAMS_ERROR,"应用 id 不能为空");
+        ThrowUtils.throwIf(appId == null, ResultEnum.PARAMS_ERROR, "应用 id 不能为空");
         // 校验应用是否存在
         App oldApp = this.getById(appId);
-        ThrowUtils.throwIf(oldApp == null, ResultEnum.NOT_FOUND_ERROR,"应用不存在");
+        ThrowUtils.throwIf(oldApp == null, ResultEnum.NOT_FOUND_ERROR, "应用不存在");
         // 校验是否为应用的创建者
         User loginUser = userService.getLoginUser();
-        ThrowUtils.throwIf(!oldApp.getUserId().equals(loginUser.getId()), ResultEnum.NO_AUTH_ERROR,"无权限操作该应用");
+        ThrowUtils.throwIf(!oldApp.getUserId().equals(loginUser.getId()), ResultEnum.NO_AUTH_ERROR, "无权限操作该应用");
 
         boolean result = this.removeById(appId);
         if (!result) {
@@ -157,7 +191,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         UserVO userVO = userService.getUserVO(user);
 
         AppVO appVO = new AppVO();
-        BeanUtils.copyProperties(app,appVO);
+        BeanUtils.copyProperties(app, appVO);
         appVO.setUser(userVO);
 
         return appVO;
@@ -166,6 +200,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
 
     /**
      * 转换 appList 为 appVOList
+     *
      * @param appList 应用列表
      * @return 脱敏后 的应用列表
      */
@@ -190,13 +225,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
 
     @Override
     public Page<App> listAppByPage(AppQueryRequest appQueryRequest) {
-        ThrowUtils.throwIf(appQueryRequest.getPageSize()>20, ResultEnum.OPERATION_ERROR, "每页最多只能查询20条数据");
+        ThrowUtils.throwIf(appQueryRequest.getPageSize() > 20, ResultEnum.OPERATION_ERROR, "每页最多只能查询20条数据");
         // 如果查询的不是精选应用，则要校验用户权限
-        if (!appQueryRequest.getPriority().equals(AppConstant.GOOD_APP_PRIORITY)){
+        if (!appQueryRequest.getPriority().equals(AppConstant.GOOD_APP_PRIORITY)) {
             // 不是管理员，则只能查询自己的应用
             if (!StpUtil.hasRole(RoleEnum.ADMIN.getValue())) {
                 if (appQueryRequest.getUserId() == null || !appQueryRequest.getUserId().equals(StpUtil.getLoginIdAsLong())) {
-                    log.warn("非管理员用户 {} 查询了无权限用户：{} 的应用",StpUtil.getLoginIdAsLong(),appQueryRequest.getUserId());
+                    log.warn("非管理员用户 {} 查询了无权限用户：{} 的应用", StpUtil.getLoginIdAsLong(), appQueryRequest.getUserId());
                     appQueryRequest.setUserId(userService.getLoginUser().getId());
                 }
             }
@@ -214,6 +249,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
 
     /**
      * 管理员更新应用信息
+     *
      * @param appAdminUpdateRequest 更新请求参数
      */
     @Override
