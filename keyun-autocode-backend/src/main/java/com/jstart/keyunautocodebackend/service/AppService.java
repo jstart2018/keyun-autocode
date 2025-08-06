@@ -20,6 +20,8 @@ public interface AppService extends IService<App> {
 
     Flux<String> genAppCode(String userMessage, Long appId);
 
+    String deployApp(Long appId);
+
     QueryWrapper<App> getQueryWrapper(AppQueryRequest appQueryRequest);
 
     Long createApp(String initPrompt);

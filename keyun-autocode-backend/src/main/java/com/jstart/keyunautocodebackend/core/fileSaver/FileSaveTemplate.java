@@ -2,6 +2,7 @@ package com.jstart.keyunautocodebackend.core.fileSaver;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
+import com.jstart.keyunautocodebackend.constant.AppConstant;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.exception.BusinessException;
 import com.jstart.keyunautocodebackend.model.ResultEnum;
@@ -13,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public abstract class FileSaveTemplate<T> {
     //文件保存的根目录
-    private static final String SAVE_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output";
+    private static final String SAVE_ROOT_DIR = AppConstant.CODE_OUTPUT_ROOT_DIR;
 
 
     /**

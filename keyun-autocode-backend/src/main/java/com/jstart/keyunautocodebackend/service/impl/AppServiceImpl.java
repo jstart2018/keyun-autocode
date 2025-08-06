@@ -1,6 +1,9 @@
 package com.jstart.keyunautocodebackend.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.io.IORuntimeException;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -10,6 +13,7 @@ import com.jstart.keyunautocodebackend.auth.RoleEnum;
 import com.jstart.keyunautocodebackend.constant.AppConstant;
 import com.jstart.keyunautocodebackend.core.AiCodeGeneratorFacade;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
+import com.jstart.keyunautocodebackend.exception.BusinessException;
 import com.jstart.keyunautocodebackend.exception.ThrowUtils;
 import com.jstart.keyunautocodebackend.model.ResultEnum;
 import com.jstart.keyunautocodebackend.model.dto.app.AppAdminUpdateRequest;
@@ -28,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +81,62 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
 
         // 调用AI代码生成器（门面类）
         return aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, genTypeEnum, appId);
+    }
+
+    /**
+     * 部署应用
+     *
+     * @param appId 应用ID
+     * @return 可访问的URL
+     */
+    @Override
+    public String deployApp(Long appId) {
+        //1、校验参数
+        ThrowUtils.throwIf(appId == null || appId < 0, ResultEnum.PARAMS_ERROR, "请输入正确的应用 id");
+        //2、校验app是否存在
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ResultEnum.NOT_FOUND_ERROR, "应用不存在");
+
+        //3、校验权限（是否为应用的创建者）
+        ThrowUtils.throwIf(!app.getUserId().equals(userService.getLoginUser().getId()),
+                ResultEnum.NO_AUTH_ERROR, "无权限操作该应用");
+
+        //4、检查deployKey是否存在
+        String deployKey = app.getDeployKey();
+        if (StrUtil.isNotBlank(deployKey)) {
+            //如果deployKey已存在，直接返回可访问的URL
+            return String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        }
+        deployKey = RandomUtil.randomStringWithoutStr(6, "0oO");
+
+        //5、获取代码模式类型、获取原文件路径
+        String codeGenType = app.getCodeGenType();
+        String sourceDirName = codeGenType + "_" + appId;
+        String sourcePath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+
+        //检查该目录是否存在
+        File sourceDir = new File(sourcePath);
+        ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(),
+                ResultEnum.OPERATION_ERROR, "应用代码不存在，请先生成代码");
+
+        //6、复制文件到部署目录
+        String deployPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
+        try {
+            FileUtil.copyContent(sourceDir, new File(deployPath), true);
+        } catch (IORuntimeException e) {
+            throw new BusinessException(ResultEnum.SYSTEM_ERROR, "应用部署失败，请重试");
+        }
+
+        //7、更新数据库（部署时间、部署key）
+        App updateApp = new App();
+        updateApp.setId(appId);
+        updateApp.setDeployKey(deployKey);
+        updateApp.setDeployedTime(LocalDateTime.now());
+        boolean updateResult = this.updateById(updateApp);
+        ThrowUtils.throwIf(!updateResult, ResultEnum.SYSTEM_ERROR, "更新应用部署信息失败");
+
+        //8、返回可访问的URL
+        return String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
     }
 
     /**

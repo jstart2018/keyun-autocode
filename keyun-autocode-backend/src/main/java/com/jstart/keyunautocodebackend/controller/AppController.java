@@ -12,10 +12,7 @@ import com.jstart.keyunautocodebackend.exception.ThrowUtils;
 import com.jstart.keyunautocodebackend.model.Result;
 import com.jstart.keyunautocodebackend.model.ResultEnum;
 import com.jstart.keyunautocodebackend.model.dto.DeleteRequest;
-import com.jstart.keyunautocodebackend.model.dto.app.AppAddRequest;
-import com.jstart.keyunautocodebackend.model.dto.app.AppAdminUpdateRequest;
-import com.jstart.keyunautocodebackend.model.dto.app.AppQueryRequest;
-import com.jstart.keyunautocodebackend.model.dto.app.AppUpdateRequest;
+import com.jstart.keyunautocodebackend.model.dto.app.*;
 import com.jstart.keyunautocodebackend.model.entity.App;
 import com.jstart.keyunautocodebackend.model.vo.AppVO;
 import com.jstart.keyunautocodebackend.service.AppService;
@@ -73,6 +70,20 @@ public class AppController {
                                 .event("done")
                                 .data("")
                                 .build()));
+    }
+
+    /**
+     * 部署应用
+     *
+     * @param appDeployRequest 应用ID
+     * @return 部署结果
+     */
+    @PostMapping("/deploy")
+    public Result<String> deployApp(@RequestBody AppDeployRequest appDeployRequest) {
+        ThrowUtils.throwIf(appDeployRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
+
+        String deployResult = appService.deployApp(appDeployRequest.getAppId());
+        return Result.success(deployResult);
     }
 
 
