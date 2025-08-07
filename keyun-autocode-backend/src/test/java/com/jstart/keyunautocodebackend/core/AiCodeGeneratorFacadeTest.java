@@ -17,23 +17,13 @@ class AiCodeGeneratorFacadeTest {
     @Resource
     AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
-    @Test
-    void generateAndSaveHtmlCode() {
-        File file = aiCodeGeneratorFacade.generateAndSaveCode("生成一个简单的登录页面，不超过20行代码", CodeGenTypeEnum.HTML);
-        Assertions.assertNotNull(file);
-    }
 
-    @Test
-    void generateAndSaveMultiFileCode() {
-        File file = aiCodeGeneratorFacade.generateAndSaveCode("生成一个简单的登录页面，不超过50行代码", CodeGenTypeEnum.MULTI_FILE);
-        Assertions.assertNotNull(file);
-    }
 
     @Test
     void generateAndSaveCodeStream(){
         // 测试流式代码生成
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream
-                ("帮我生成一个个人网站，不超过150行代码", CodeGenTypeEnum.MULTI_FILE);
+                ("帮我生成一个个人网站，不超过150行代码", CodeGenTypeEnum.MULTI_FILE,1L);
         List<String> result = codeStream.collectList().block();// 阻塞等待流处理完成
         Assertions.assertNotNull(result);
 

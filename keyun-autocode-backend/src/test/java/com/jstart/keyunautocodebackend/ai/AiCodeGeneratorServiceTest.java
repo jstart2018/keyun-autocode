@@ -17,7 +17,11 @@ class AiCodeGeneratorServiceTest {
 
     @Test
     void chat() {
-        String resp = aiCodeGeneratorService.chat("帮我生成一个个人网站，，数据使用静态数据，不超过50行代码");
+        String resp = aiCodeGeneratorService.chat("帮我生成一个登录页面，不超过50行代码");
+        Assertions.assertNotNull(resp);
+        resp = aiCodeGeneratorService.chat("修改一下，浓缩20行代码");
+        Assertions.assertNotNull(resp);
+        resp = aiCodeGeneratorService.chat("我刚刚都交代了你做什么？");
         Assertions.assertNotNull(resp);
         System.out.println(resp);
     }

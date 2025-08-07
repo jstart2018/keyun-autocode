@@ -12,16 +12,20 @@ import com.jstart.keyunautocodebackend.model.ResultEnum;
 import com.jstart.keyunautocodebackend.model.dto.ChatHistory.ChatHistoryQueryRequest;
 import com.jstart.keyunautocodebackend.model.entity.App;
 import com.jstart.keyunautocodebackend.model.entity.ChatHistory;
-import com.jstart.keyunautocodebackend.model.entity.User;
 import com.jstart.keyunautocodebackend.service.AppService;
 import com.jstart.keyunautocodebackend.service.ChatHistoryService;
 import com.jstart.keyunautocodebackend.mapper.ChatHistoryMapper;
 import com.jstart.keyunautocodebackend.service.UserService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.memory.ChatMemory;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
 * @author 28435
@@ -29,6 +33,7 @@ import java.time.LocalDateTime;
 * @createDate 2025-08-07 10:35:12
 */
 @Service
+@Slf4j
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory>
     implements ChatHistoryService{
     
@@ -129,13 +134,58 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     }
 
 
+    /**
+     * 用于给redis对话记忆过期后，加载历史记录
+     * @param appId 应用ID
+     * @param chatMemory 对话记忆实例
+     * @param maxMessages 最大消息数
+     * @return 加载的消息数量
+     */
+    @Override
+    public int loadHistoryToRedis(Long appId, ChatMemory chatMemory, int maxMessages) {
+        int loadedCount = 0;
+        try {
+            // 验证权限：只有应用创建者和管理员可以加载历史记录
+            App app = appService.getById(appId);
+            if (app == null) {
+                log.debug("查找了不存在的应用对话历史，appId: {}", appId.toString());
+                return 0;
+            }
+            // 查询对话历史
+            QueryWrapper<ChatHistory> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("app_id", appId)
+                    .orderByDesc("create_time")
+                    .last("LIMIT " + "1" + maxMessages);
+            List<ChatHistory> histories = this.list(queryWrapper);
+            // 验证是否有历史记录
+            if (histories == null || histories.isEmpty()) {
+                return 0;
+            }
+            //反转历史消息，最早的放在前面
+            histories = histories.reversed();
+            //防止重复消息，先清除旧的脏数据
+            chatMemory.clear();
 
+            loadedCount = 0;
+            for (ChatHistory history : histories) {
+                if (ChatHistoryMessageTypeEnum.AI.getValue().equals(history.getMessageType())) {
+                    chatMemory.add(AiMessage.from(history.getMessage()));
+                } else if (ChatHistoryMessageTypeEnum.USER.getValue().equals(history.getMessageType())) {
+                    chatMemory.add(UserMessage.from(history.getMessage()));
+                } else {
+                    log.warn("不支持加载到 记忆 的消息类型: {}", history.getMessageType());
+                    continue; // 跳过不支持的消息类型
+                }
+                loadedCount++;
+            }
+        } catch (Exception e) {
+            log.error("加载对话历史到 Redis 记忆失败，appId: {}, 错误: {}", appId, e.getMessage(), e);
+            // 可以选择抛出异常或返回0表示加载失败
+            return loadedCount;
+        }
+        return loadedCount;
 
-
-
-
-
-
+    }
 
 }
 

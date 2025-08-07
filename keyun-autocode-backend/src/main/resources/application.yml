@@ -8,6 +8,7 @@ spring:
       database: 2
       host: 127.0.0.1
       port: 6379
+      ttl: 3600 # 记忆过期时间
       timeout: 10s
       lettuce:
         pool:

@@ -3,7 +3,9 @@ package com.jstart.keyunautocodebackend.ai;
 import com.jstart.keyunautocodebackend.ai.model.HtmlCodeResult;
 import com.jstart.keyunautocodebackend.ai.model.MultiFileCodeResult;
 import dev.langchain4j.service.AiServices;
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.UserMessage;
 import org.springframework.context.annotation.Bean;
 import reactor.core.publisher.Flux;
 
