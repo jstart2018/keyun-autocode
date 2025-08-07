@@ -28,7 +28,6 @@ public interface AppService extends IService<App> {
 
     void updateAppById(App app);
 
-    void removeAppById(Long appId);
 
     boolean removeAppByUserId(Long userId);
 

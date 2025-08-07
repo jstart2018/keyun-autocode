@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jstart.keyunautocodebackend.auth.RoleEnum;
 import com.jstart.keyunautocodebackend.constant.AppConstant;
 import com.jstart.keyunautocodebackend.core.AiCodeGeneratorFacade;
+import com.jstart.keyunautocodebackend.enums.ChatHistoryMessageTypeEnum;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.exception.BusinessException;
 import com.jstart.keyunautocodebackend.exception.ThrowUtils;
@@ -28,11 +29,11 @@ import com.jstart.keyunautocodebackend.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
     private UserService userService;
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+    @Resource
+    private ChatHistoryServiceImpl chatHistoryService;
 
 
     /**
@@ -72,15 +75,37 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         ThrowUtils.throwIf(app == null, ResultEnum.NOT_FOUND_ERROR, "应用不存在");
 
         // 校验权限（是否为应用的创建者）
-        ThrowUtils.throwIf(!app.getUserId().equals(userService.getLoginUser().getId()),
+        Long loginUserId = userService.getLoginUser().getId();
+        ThrowUtils.throwIf(!app.getUserId().equals(loginUserId),
                 ResultEnum.NO_AUTH_ERROR, "无权限操作该应用");
 
         //校验代码生成类型
         CodeGenTypeEnum genTypeEnum = CodeGenTypeEnum.getByValue(app.getCodeGenType());
         ThrowUtils.throwIf(genTypeEnum == null, ResultEnum.PARAMS_ERROR, "不支持的代码生成类型");
 
+        // 持久化用户的提问
+        boolean saveUserMsgResult = chatHistoryService.addChatMessage
+                (appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUserId);
+
         // 调用AI代码生成器（门面类）
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, genTypeEnum, appId);
+        Flux<String> useAiResult = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, genTypeEnum, appId);
+        // 持久化AI的回答
+        StringBuilder sb = new StringBuilder();
+        return useAiResult.map(chunk -> {
+            sb.append(chunk);
+            return chunk;//使用map要返回值，如果使用的是doOnNext则不需要返回值
+        }).doOnComplete(() -> {
+            String string = sb.toString();
+            if (StrUtil.isNotBlank(string)) {
+                chatHistoryService.addChatMessage(appId, string,
+                        ChatHistoryMessageTypeEnum.AI.getValue(), loginUserId);
+            }
+        }).doOnError(error -> {
+            //如果生成代码失败，也要持久化AI的回答
+            chatHistoryService.addChatMessage(appId, "生成代码失败，原因：" + error.getMessage(),
+                    ChatHistoryMessageTypeEnum.AI.getValue(), loginUserId);
+        });
+
     }
 
     /**
@@ -213,22 +238,49 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
 
     }
 
+    /**
+     * 重写removeById方法，增加鉴权和关联删除该app的对话记忆
+     * @param appId 应用ID
+     * @return 是否删除成功
+     */
     @Override
-    public void removeAppById(Long appId) {
+    public boolean removeById(Serializable appId) {
 
         ThrowUtils.throwIf(appId == null, ResultEnum.PARAMS_ERROR, "应用 id 不能为空");
-        // 校验应用是否存在
+        // 1、校验应用是否存在
         App oldApp = this.getById(appId);
         ThrowUtils.throwIf(oldApp == null, ResultEnum.NOT_FOUND_ERROR, "应用不存在");
-        // 校验是否为应用的创建者
+        // 2、校验是否为应用的创建者
         User loginUser = userService.getLoginUser();
         ThrowUtils.throwIf(!oldApp.getUserId().equals(loginUser.getId()), ResultEnum.NO_AUTH_ERROR, "无权限操作该应用");
 
-        boolean result = this.removeById(appId);
-        if (!result) {
+        //3、删除该应用的对话记忆
+        boolean delChatHistoryResult = chatHistoryService.deleteByAppId(oldApp.getId());
+
+        try {
+            //4、删除应用代码文件
+            String sourceDirName = oldApp.getCodeGenType() + "_" + oldApp.getId();
+            String sourcePath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+            FileUtil.del(sourcePath);
+
+            //5、删除部署的代码文件
+            String deployKey = oldApp.getDeployKey();
+            if (StrUtil.isNotBlank(deployKey)) {
+                String deployPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
+                FileUtil.del(deployPath);
+            }
+        } catch (IORuntimeException e) {
+            log.error("删除应用文件失败，应用ID：{}，错误信息：{}", oldApp.getId(), e.getMessage());
+            throw new BusinessException(ResultEnum.SYSTEM_ERROR, "应用文件删除失败!");
+        }
+
+        //6、删除应用
+        boolean delAppResult = super.removeById(oldApp.getId());
+        if (!(delAppResult && delChatHistoryResult)) {
             throw new RuntimeException("应用删除失败");
         }
 
+        return true;
     }
 
     /**
@@ -238,9 +290,14 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
      */
     @Override
     public boolean removeAppByUserId(Long userId) {
-        LambdaUpdateWrapper<App> updateWrapper = new LambdaUpdateWrapper<>();
-        updateWrapper.eq(App::getUserId, userId);
-        return this.remove(updateWrapper);
+        QueryWrapper<App> qw = new QueryWrapper<>();
+        qw.eq("user_id", userId);
+        //关联删除该用户的所有应用
+        this.list(qw).forEach(app -> {
+            this.removeById(app.getId());
+        });
+
+        return true;
     }
 
     @Override

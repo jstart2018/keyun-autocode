@@ -105,7 +105,7 @@ public class AppController {
     public Result<Boolean> deleteApp(@RequestBody DeleteRequest deleteRequest) {
         ThrowUtils.throwIf(deleteRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
 
-        appService.removeAppById(deleteRequest.getId());
+        appService.removeById(deleteRequest.getId());
 
         return Result.success(true);
     }
