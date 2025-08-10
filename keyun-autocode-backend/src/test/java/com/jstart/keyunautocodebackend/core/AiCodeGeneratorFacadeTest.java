@@ -31,4 +31,17 @@ class AiCodeGeneratorFacadeTest {
         Assertions.assertFalse(join.isEmpty(), "生成的代码流不应为空");
 
     }
+
+    @Test
+    void genVueProject(){
+        // 测试流式代码生成
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream
+                ("帮我生成一个个人网站，不超过300行代码", CodeGenTypeEnum.VUE_PROJECT,2L);
+        List<String> result = codeStream.collectList().block();// 阻塞等待流处理完成
+        Assertions.assertNotNull(result);
+
+        String join = String.join("", result);
+        Assertions.assertFalse(join.isEmpty(), "生成的代码流不应为空");
+
+    }
 }

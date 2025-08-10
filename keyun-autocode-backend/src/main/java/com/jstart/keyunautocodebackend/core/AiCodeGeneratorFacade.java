@@ -39,7 +39,8 @@ public class AiCodeGeneratorFacade {
             throw new BusinessException(ResultEnum.SYSTEM_ERROR, "生成类型为空");
         }
         //获取 AI 代码生成服务实例
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId,codeGenTypeEnum);
+        log.info("获取 AI 代码生成服务实例: {}", aiCodeGeneratorService.getClass().getSimpleName());
 
         return switch (codeGenTypeEnum) {
             case HTML -> {
@@ -50,6 +51,8 @@ public class AiCodeGeneratorFacade {
                 Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
                 yield parserAndSaveResult(result, codeGenTypeEnum, appId);
             }
+            case VUE_PROJECT -> aiCodeGeneratorService.generateVueProjectCodeStream(appId,userMessage);
+
             default -> {
                 String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
                 throw new BusinessException(ResultEnum.SYSTEM_ERROR, errorMessage);

@@ -141,6 +141,7 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
      * @param maxMessages 最大消息数
      * @return 加载的消息数量
      */
+    // TODO 有重复记忆的情况
     @Override
     public int loadHistoryToRedis(Long appId, ChatMemory chatMemory, int maxMessages) {
         int loadedCount = 0;
@@ -166,7 +167,6 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
             //防止重复消息，先清除旧的脏数据
             chatMemory.clear();
 
-            loadedCount = 0;
             for (ChatHistory history : histories) {
                 if (ChatHistoryMessageTypeEnum.AI.getValue().equals(history.getMessageType())) {
                     chatMemory.add(AiMessage.from(history.getMessage()));

@@ -3,6 +3,8 @@ package com.jstart.keyunautocodebackend.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jstart.keyunautocodebackend.ai.tools.FileWriteTool;
+import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.service.ChatHistoryService;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -25,13 +27,16 @@ public class AiCodeGeneratorServiceFactory {
 
 
     @Resource
-    private StreamingChatModel streamingChatModel;
+    private StreamingChatModel openAiStreamingChatModel;
 
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
 
     @Resource
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private StreamingChatModel reasoningStreamingChatModel;
 
     /**
      * AI 服务实例缓存
@@ -40,26 +45,39 @@ public class AiCodeGeneratorServiceFactory {
      * - 写入后 30 分钟过期
      * - 访问后 10 分钟过期
      */
-    private final Cache<Long, AiCodeGeneratorService> serviceCache = Caffeine.newBuilder()
+    private final Cache<String, AiCodeGeneratorService> serviceCache = Caffeine.newBuilder()
             .maximumSize(1000)
             .expireAfterWrite(Duration.ofMinutes(30))
             .expireAfterAccess(Duration.ofMinutes(10))
             .removalListener((key, value, cause) -> {
-                log.debug("AI 服务实例被移除，appId: {}, 原因: {}", key, cause);
+                log.debug("AI 服务实例被移除，catchKey: {}, 原因: {}", key, cause);
             })
             .build();
 
     /**
+     * 兼容旧的代码
      * 根据 appId 获取服务（带缓存）
      */
     public AiCodeGeneratorService getAiCodeGeneratorService(long appId) {
-        return serviceCache.get(appId, this::createAiCodeGeneratorService);
+        //适配旧的代码，因为这里html和多文件生成都使用了同一个服务，所以默认返回多文件生成的服务
+        return getAiCodeGeneratorService(appId, CodeGenTypeEnum.MULTI_FILE);
+    }
+
+    /**
+     * 根据 生成类型 获取AI服务实例（带缓存）
+     * @param appId
+     * @param codeGenTypeEnum
+     * @return
+     */
+    public AiCodeGeneratorService getAiCodeGeneratorService(long appId,CodeGenTypeEnum codeGenTypeEnum) {
+        String cacheKey = buildCacheKey(appId, codeGenTypeEnum);
+        return serviceCache.get(cacheKey, key->createAiCodeGeneratorService(appId, codeGenTypeEnum));
     }
 
     /**
      * 创建新的 AI 服务实例
      */
-    private AiCodeGeneratorService createAiCodeGeneratorService(long appId) {
+    private AiCodeGeneratorService createAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenTypeEnum) {
         log.info("为 appId: {} 创建新的 AI 服务实例", appId);
         // 根据 appId 构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
@@ -70,11 +88,23 @@ public class AiCodeGeneratorServiceFactory {
                 .build();
         // 当缓存中的AI Service过期时，需要重新创建，同时加载旧的对话记忆
         chatHistoryService.loadHistoryToRedis(appId, chatMemory, 20);
-        return AiServices.builder(AiCodeGeneratorService.class)
-                .chatModel(chatModel)
-                .streamingChatModel(streamingChatModel)
-                .chatMemory(chatMemory)
-                .build();
+
+        return switch (codeGenTypeEnum) {
+            case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
+                    .chatModel(chatModel)
+                    .streamingChatModel(openAiStreamingChatModel)
+                    .chatMemory(chatMemory)
+                    .build();
+            case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
+                    .chatModel(chatModel)
+                    .streamingChatModel(reasoningStreamingChatModel)
+                    .chatMemoryProvider(memoryId -> chatMemory)
+                    .tools(new FileWriteTool())
+                    .build();
+            default -> throw new IllegalArgumentException("不支持的代码生成类型: " + codeGenTypeEnum);
+        };
+
+
     }
 
 
@@ -98,6 +128,10 @@ public class AiCodeGeneratorServiceFactory {
                         .maxMessages(20)
                         .build())
                 .build();
+    }
+
+    private String buildCacheKey(long appId, CodeGenTypeEnum codeGenTypeEnum) {
+        return  codeGenTypeEnum.getValue()+"_"+appId;
     }
 
 
