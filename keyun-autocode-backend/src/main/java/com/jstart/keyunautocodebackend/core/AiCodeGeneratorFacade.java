@@ -1,15 +1,22 @@
 package com.jstart.keyunautocodebackend.core;
 
 
+import cn.hutool.json.JSONUtil;
 import com.jstart.keyunautocodebackend.ai.AiCodeGeneratorService;
 import com.jstart.keyunautocodebackend.ai.AiCodeGeneratorServiceFactory;
 import com.jstart.keyunautocodebackend.ai.model.HtmlCodeResult;
 import com.jstart.keyunautocodebackend.ai.model.MultiFileCodeResult;
+import com.jstart.keyunautocodebackend.ai.model.message.AiResponseMessage;
+import com.jstart.keyunautocodebackend.ai.model.message.ToolExecutedMessage;
+import com.jstart.keyunautocodebackend.ai.model.message.ToolRequestMessage;
 import com.jstart.keyunautocodebackend.core.codeParser.CodeParserExecutor;
 import com.jstart.keyunautocodebackend.core.fileSaver.FileSaveExecutor;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.exception.BusinessException;
 import com.jstart.keyunautocodebackend.model.ResultEnum;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.service.TokenStream;
+import dev.langchain4j.service.tool.ToolExecution;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,8 +58,11 @@ public class AiCodeGeneratorFacade {
                 Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
                 yield parserAndSaveResult(result, codeGenTypeEnum, appId);
             }
-            case VUE_PROJECT -> aiCodeGeneratorService.generateVueProjectCodeStream(appId,userMessage);
-
+            case VUE_PROJECT -> {
+                TokenStream aiResult = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
+                // 处理 TokenStream 转换为 Flux<String>
+                yield  processTokenStream(aiResult);
+            }
             default -> {
                 String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
                 throw new BusinessException(ResultEnum.SYSTEM_ERROR, errorMessage);
@@ -81,5 +91,37 @@ public class AiCodeGeneratorFacade {
                     }
                 });
     }
+
+    /**
+     * 将 TokenStream 转换为 Flux<String>，并传递工具调用信息
+     *
+     * @param tokenStream TokenStream 对象
+     * @return Flux<String> 流式响应
+     */
+    private Flux<String> processTokenStream(TokenStream tokenStream) {
+        return Flux.create(sink -> {
+            tokenStream.onPartialResponse((String partialResponse) -> {
+                        AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
+                        sink.next(JSONUtil.toJsonStr(aiResponseMessage));
+                    })
+                    .onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
+                        ToolRequestMessage toolRequestMessage = new ToolRequestMessage(toolExecutionRequest);
+                        sink.next(JSONUtil.toJsonStr(toolRequestMessage));
+                    })
+                    .onToolExecuted((ToolExecution toolExecution) -> {
+                        ToolExecutedMessage toolExecutedMessage = new ToolExecutedMessage(toolExecution);
+                        sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
+                    })
+                    .onCompleteResponse((ChatResponse response) -> {
+                        sink.complete();
+                    })
+                    .onError((Throwable error) -> {
+                        error.printStackTrace();
+                        sink.error(error);
+                    })
+                    .start();
+        });
+    }
+
 
 }

@@ -7,6 +7,7 @@ import com.jstart.keyunautocodebackend.ai.tools.FileWriteTool;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.service.ChatHistoryService;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
@@ -100,6 +101,10 @@ public class AiCodeGeneratorServiceFactory {
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
                     .tools(new FileWriteTool())
+                    // 处理工具调用幻觉问题
+                    .hallucinatedToolNameStrategy(hallucinatedToolName ->
+                            ToolExecutionResultMessage.from(hallucinatedToolName,
+                                    "Error: there is no such tool: " + hallucinatedToolName.name()))
                     .build();
             default -> throw new IllegalArgumentException("不支持的代码生成类型: " + codeGenTypeEnum);
         };

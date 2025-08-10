@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jstart.keyunautocodebackend.auth.RoleEnum;
 import com.jstart.keyunautocodebackend.constant.AppConstant;
 import com.jstart.keyunautocodebackend.core.AiCodeGeneratorFacade;
+import com.jstart.keyunautocodebackend.core.resultStreamHandler.StreamHandlerExecutor;
 import com.jstart.keyunautocodebackend.enums.ChatHistoryMessageTypeEnum;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.exception.BusinessException;
@@ -56,6 +57,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
     @Resource
     private ChatHistoryServiceImpl chatHistoryService;
+    @Resource
+    private StreamHandlerExecutor streamHandlerExecutor;
 
 
     /**
@@ -75,8 +78,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         ThrowUtils.throwIf(app == null, ResultEnum.NOT_FOUND_ERROR, "应用不存在");
 
         // 校验权限（是否为应用的创建者）
-        Long loginUserId = userService.getLoginUser().getId();
-        ThrowUtils.throwIf(!app.getUserId().equals(loginUserId),
+        User loginUser = userService.getLoginUser();
+        ThrowUtils.throwIf(!app.getUserId().equals(loginUser.getId()),
                 ResultEnum.NO_AUTH_ERROR, "无权限操作该应用");
 
         //校验代码生成类型
@@ -85,11 +88,14 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
 
         // 持久化用户的提问
         boolean saveUserMsgResult = chatHistoryService.addChatMessage
-                (appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUserId);
+                (appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
 
         // 调用AI代码生成器（门面类）
         Flux<String> useAiResult = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, genTypeEnum, appId);
         // 持久化AI的回答
+        return streamHandlerExecutor.doExecute(useAiResult, chatHistoryService, appId, loginUser, genTypeEnum);
+
+        /* 已被上面的适配器替代
         StringBuilder sb = new StringBuilder();
         return useAiResult.map(chunk -> {
             sb.append(chunk);
@@ -104,7 +110,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
             //如果生成代码失败，也要持久化AI的回答
             chatHistoryService.addChatMessage(appId, "生成代码失败，原因：" + error.getMessage(),
                     ChatHistoryMessageTypeEnum.AI.getValue(), loginUserId);
-        });
+        });*/
 
     }
 
