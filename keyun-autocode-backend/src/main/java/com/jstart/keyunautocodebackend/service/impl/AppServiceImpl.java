@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jstart.keyunautocodebackend.auth.RoleEnum;
 import com.jstart.keyunautocodebackend.constant.AppConstant;
 import com.jstart.keyunautocodebackend.core.AiCodeGeneratorFacade;
+import com.jstart.keyunautocodebackend.core.projectBuilder.VueProjectBuilder;
 import com.jstart.keyunautocodebackend.core.resultStreamHandler.StreamHandlerExecutor;
 import com.jstart.keyunautocodebackend.enums.ChatHistoryMessageTypeEnum;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
@@ -59,12 +60,15 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
     private ChatHistoryServiceImpl chatHistoryService;
     @Resource
     private StreamHandlerExecutor streamHandlerExecutor;
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
 
     /**
      * 生成应用代码（流式）
+     *
      * @param userMessage 用户提示词
-     * @param appId 应用ID
+     * @param appId       应用ID
      * @return 响应流
      */
     @Override
@@ -145,13 +149,27 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         String sourceDirName = codeGenType + "_" + appId;
         String sourcePath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
 
-        //检查该目录是否存在
+        //6、检查该目录是否存在
         File sourceDir = new File(sourcePath);
         ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(),
                 ResultEnum.OPERATION_ERROR, "应用代码不存在，请先生成代码");
 
-        //6、复制文件到部署目录
+        // 7. Vue 项目特殊处理：执行构建
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getByValue(codeGenType);
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
+            // Vue 项目需要构建
+            boolean buildSuccess = vueProjectBuilder.buildProject(sourcePath);
+            ThrowUtils.throwIf(!buildSuccess, ResultEnum.SYSTEM_ERROR, "Vue 项目构建失败，请检查代码和依赖");
+            // 检查 dist 目录是否存在
+            File distDir = new File(sourcePath, "dist");
+            ThrowUtils.throwIf(!distDir.exists(), ResultEnum.SYSTEM_ERROR, "Vue 项目构建完成但未生成 dist 目录");
+            // 将 dist 目录作为部署源
+            sourceDir = distDir;
+            log.info("Vue 项目构建成功，将部署 dist 目录: {}", distDir.getAbsolutePath());
+        }
+        // 8. 复制文件到部署目录
         String deployPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
+
         try {
             FileUtil.copyContent(sourceDir, new File(deployPath), true);
         } catch (IORuntimeException e) {
@@ -246,6 +264,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
 
     /**
      * 重写removeById方法，增加鉴权和关联删除该app的对话记忆
+     *
      * @param appId 应用ID
      * @return 是否删除成功
      */
