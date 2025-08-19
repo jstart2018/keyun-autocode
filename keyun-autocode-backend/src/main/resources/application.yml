@@ -92,3 +92,11 @@ langchain4j:
       log-requests: true
       log-responses: true
       max-tokens: 8192
+# 添加 COS 对象存储配置（需要从腾讯云获取）
+cos:
+  client:
+    host: ${cos.host}
+    secretId: ${cos.secretId}
+    secretKey: ${cos.secretKey}
+    region: ${cos.region}
+    bucket: ${cos.bucket}

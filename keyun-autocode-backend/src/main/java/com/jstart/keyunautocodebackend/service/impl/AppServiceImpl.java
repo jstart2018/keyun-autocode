@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.jstart.keyunautocodebackend.ai.AiCodeGenTypeRoutingService;
 import com.jstart.keyunautocodebackend.auth.RoleEnum;
 import com.jstart.keyunautocodebackend.constant.AppConstant;
 import com.jstart.keyunautocodebackend.core.AiCodeGeneratorFacade;
@@ -27,6 +28,7 @@ import com.jstart.keyunautocodebackend.model.vo.AppVO;
 import com.jstart.keyunautocodebackend.model.vo.UserVO;
 import com.jstart.keyunautocodebackend.service.AppService;
 import com.jstart.keyunautocodebackend.mapper.AppMapper;
+import com.jstart.keyunautocodebackend.service.ScreenshotService;
 import com.jstart.keyunautocodebackend.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +64,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
     private StreamHandlerExecutor streamHandlerExecutor;
     @Resource
     private VueProjectBuilder vueProjectBuilder;
+    @Resource
+    private ScreenshotService screenshotService;
+    @Resource
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
 
 
     /**
@@ -184,8 +190,28 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         boolean updateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ResultEnum.SYSTEM_ERROR, "更新应用部署信息失败");
 
-        //8、返回可访问的URL
-        return String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        //8、生成可访问的URL
+        String appDeployUrl = String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+
+        //9、异步生成截图并上传到COS
+        //todo 待测试
+        Thread.startVirtualThread(() -> {
+            try {
+                // 生成并上传截图
+                String imgUrl = screenshotService.generateAndUploadScreenshot(appDeployUrl);
+                // 更新应用的封面图片URL
+                if (StrUtil.isNotBlank(imgUrl)) {
+                    this.update(new LambdaUpdateWrapper<App>()
+                            .eq(App::getId, appId)
+                            .set(App::getCover, imgUrl));
+                }
+            } catch (Exception e) {
+                log.error("生成应用部署截图失败，应用ID：{}，错误信息：{}", appId, e.getMessage());
+            }
+        });
+
+        return appDeployUrl;
+
     }
 
     /**
@@ -232,11 +258,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         App app = new App();
         app.setInitPrompt(initPrompt);
         app.setUserId(userService.getLoginUser().getId());
-        //todo 应用名称暂时为 prompt 的前 12 位
-        app.setAppName(initPrompt.length() <= 12 ? initPrompt : initPrompt.substring(0, 12));
-        // todo 暂定应用模式多文件
-        app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
-
+        //让AI总结用户提示词，智能获取App名字
+        app.setAppName(aiCodeGenTypeRoutingService.getInitialPrompt(initPrompt));
+        // 让AI智能选择代码生成类型
+        app.setCodeGenType(aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt).getValue());
 
         ThrowUtils.throwIf(!this.save(app), ResultEnum.SYSTEM_ERROR, "应用创建失败");
 
