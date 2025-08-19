@@ -4,6 +4,7 @@ package com.jstart.keyunautocodebackend.ai;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jstart.keyunautocodebackend.ai.tools.FileWriteTool;
+import com.jstart.keyunautocodebackend.ai.tools.ToolManager;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.service.ChatHistoryService;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
@@ -38,6 +39,9 @@ public class AiCodeGeneratorServiceFactory {
 
     @Resource
     private StreamingChatModel reasoningStreamingChatModel;
+
+    @Resource
+    private ToolManager toolManager;
 
     /**
      * AI 服务实例缓存
@@ -100,7 +104,7 @@ public class AiCodeGeneratorServiceFactory {
                     .chatModel(chatModel)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .tools(toolManager.getAllTools()) // 注册所有工具
                     // 处理工具调用幻觉问题
                     .hallucinatedToolNameStrategy(hallucinatedToolName ->
                             ToolExecutionResultMessage.from(hallucinatedToolName,
