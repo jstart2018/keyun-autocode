@@ -15,6 +15,8 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -25,11 +27,8 @@ import java.time.Duration;
 public class AiCodeGeneratorServiceFactory {
 
     @Resource
+    @Qualifier("openAiChatModel")
     private ChatModel chatModel;
-
-
-    @Resource
-    private StreamingChatModel openAiStreamingChatModel;
 
     @Resource
     private RedisChatMemoryStore redisChatMemoryStore;
@@ -38,10 +37,10 @@ public class AiCodeGeneratorServiceFactory {
     private ChatHistoryService chatHistoryService;
 
     @Resource
-    private StreamingChatModel reasoningStreamingChatModel;
+    private ToolManager toolManager;
 
     @Resource
-    private ToolManager toolManager;
+    private ApplicationContext applicationContext;
 
     /**
      * AI 服务实例缓存
@@ -70,9 +69,9 @@ public class AiCodeGeneratorServiceFactory {
 
     /**
      * 根据 生成类型 获取AI服务实例（带缓存）
-     * @param appId
-     * @param codeGenTypeEnum
-     * @return
+     * @param appId 应用id，因为缓存键跟应用id绑定了，所以每个应用都会有独立的AI服务实例（多例）
+     * @param codeGenTypeEnum 代码生成类型
+     * @return AI代码生成服务实例
      */
     public AiCodeGeneratorService getAiCodeGeneratorService(long appId,CodeGenTypeEnum codeGenTypeEnum) {
         String cacheKey = buildCacheKey(appId, codeGenTypeEnum);
@@ -93,6 +92,10 @@ public class AiCodeGeneratorServiceFactory {
                 .build();
         // 当缓存中的AI Service过期时，需要重新创建，同时加载旧的对话记忆
         chatHistoryService.loadHistoryToRedis(appId, chatMemory, 20);
+
+        // 每次创建新的 AiCodeGeneratorService 实例时，都创建新的StreamingChatModel实例，避免StreamingChatModel串行执行问题
+        StreamingChatModel openAiStreamingChatModel = applicationContext.getBean("openAiStreamingChatModelPrototype", StreamingChatModel.class);
+        StreamingChatModel reasoningStreamingChatModel = applicationContext.getBean("reasoningStreamingChatModel", StreamingChatModel.class);
 
         return switch (codeGenTypeEnum) {
             case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
