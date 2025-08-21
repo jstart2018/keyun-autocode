@@ -4,13 +4,13 @@ package com.jstart.keyunautocodebackend.core;
 import cn.hutool.json.JSONUtil;
 import com.jstart.keyunautocodebackend.ai.AiCodeGeneratorService;
 import com.jstart.keyunautocodebackend.ai.AiCodeGeneratorServiceFactory;
-import com.jstart.keyunautocodebackend.ai.model.HtmlCodeResult;
-import com.jstart.keyunautocodebackend.ai.model.MultiFileCodeResult;
 import com.jstart.keyunautocodebackend.ai.model.message.AiResponseMessage;
 import com.jstart.keyunautocodebackend.ai.model.message.ToolExecutedMessage;
 import com.jstart.keyunautocodebackend.ai.model.message.ToolRequestMessage;
+import com.jstart.keyunautocodebackend.constant.AppConstant;
 import com.jstart.keyunautocodebackend.core.codeParser.CodeParserExecutor;
 import com.jstart.keyunautocodebackend.core.fileSaver.FileSaveExecutor;
+import com.jstart.keyunautocodebackend.core.projectBuilder.VueProjectBuilder;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.exception.BusinessException;
 import com.jstart.keyunautocodebackend.model.ResultEnum;
@@ -19,6 +19,7 @@ import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolExecution;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -33,6 +34,8 @@ public class AiCodeGeneratorFacade {
 
     @Resource
     private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
+    @Resource
+    private VueProjectBuilder vueProjectBuilder;
 
 
     /**
@@ -46,7 +49,7 @@ public class AiCodeGeneratorFacade {
             throw new BusinessException(ResultEnum.SYSTEM_ERROR, "生成类型为空");
         }
         //获取 AI 代码生成服务实例
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId,codeGenTypeEnum);
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
         log.info("获取 AI 代码生成服务实例: {}", aiCodeGeneratorService.getClass().getSimpleName());
 
         return switch (codeGenTypeEnum) {
@@ -61,7 +64,7 @@ public class AiCodeGeneratorFacade {
             case VUE_PROJECT -> {
                 TokenStream aiResult = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
                 // 处理 TokenStream 转换为 Flux<String>
-                yield  processTokenStream(aiResult);
+                yield processTokenStream(aiResult, appId);
             }
             default -> {
                 String errorMessage = "不支持的生成类型：" + codeGenTypeEnum.getValue();
@@ -98,7 +101,7 @@ public class AiCodeGeneratorFacade {
      * @param tokenStream TokenStream 对象
      * @return Flux<String> 流式响应
      */
-    private Flux<String> processTokenStream(TokenStream tokenStream) {
+    private Flux<String> processTokenStream(TokenStream tokenStream, Long appId) {
         return Flux.create(sink -> {
             tokenStream.onPartialResponse((String partialResponse) -> {
                         AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
@@ -113,6 +116,15 @@ public class AiCodeGeneratorFacade {
                         sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
                     })
                     .onCompleteResponse((ChatResponse response) -> {
+                        //TODO：可优化点一
+                        /**
+                         * 在所有消息处理完毕后，添加构建项目的提示信息，
+                         * 并在下游的service层增加对提示信息的处理，可以把 提示信息也增加一个枚举，并封装成一个或对象
+                         */
+                        //sink.next("正在构建 Vue 项目，请稍候...");
+                        // 同步构建 Vue 项目
+                        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                        vueProjectBuilder.buildProjectAsync(projectPath);
                         sink.complete();
                     })
                     .onError((Throwable error) -> {

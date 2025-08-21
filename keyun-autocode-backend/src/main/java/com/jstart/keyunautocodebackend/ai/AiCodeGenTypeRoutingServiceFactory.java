@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Scope;
 /**
  * AI代码生成类型路由服务工厂
  *
- * @author yupi
+ * @author jstart
  */
 @Slf4j
 @Configuration
