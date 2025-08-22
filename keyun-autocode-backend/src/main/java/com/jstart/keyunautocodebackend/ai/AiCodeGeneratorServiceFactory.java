@@ -3,6 +3,7 @@ package com.jstart.keyunautocodebackend.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jstart.keyunautocodebackend.ai.guardrail.PromptSafetyInputGuardrail;
 import com.jstart.keyunautocodebackend.ai.tools.FileWriteTool;
 import com.jstart.keyunautocodebackend.ai.tools.ToolManager;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
@@ -102,12 +103,15 @@ public class AiCodeGeneratorServiceFactory {
                     .chatModel(chatModel)
                     .streamingChatModel(openAiStreamingChatModel)
                     .chatMemory(chatMemory)
+                    .inputGuardrails(new PromptSafetyInputGuardrail())
                     .build();
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
                     .chatModel(chatModel)
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
+                    .inputGuardrails(new PromptSafetyInputGuardrail())
                     .tools(toolManager.getAllTools()) // 注册所有工具
+                    .maxSequentialToolsInvocations(10) // 最大连续调用工具次数
                     // 处理工具调用幻觉问题
                     .hallucinatedToolNameStrategy(hallucinatedToolName ->
                             ToolExecutionResultMessage.from(hallucinatedToolName,
