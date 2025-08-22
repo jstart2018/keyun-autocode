@@ -6,6 +6,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.jstart.keyunautocodebackend.annotation.RateLimit;
 import com.jstart.keyunautocodebackend.auth.RoleEnum;
 import com.jstart.keyunautocodebackend.constant.AppConstant;
 import com.jstart.keyunautocodebackend.exception.BusinessException;
@@ -45,15 +46,16 @@ public class AppController {
     @Resource
     private ProjectDownloadService projectDownloadService;
 
-    @Resource
-    private UserService userService;
-
     @PostMapping("/add")
+    @RateLimit
     public Result<Long> createApp(@RequestBody AppAddRequest appAddRequest) {
         ThrowUtils.throwIf(appAddRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
         Long appId = appService.createApp(appAddRequest.getInitPrompt());
         return Result.success(appId);
     }
+
+    @Resource
+    private UserService userService;
 
 
     /**
@@ -63,6 +65,7 @@ public class AppController {
      * @param message 用户消息
      * @return 响应流
      */
+    @RateLimit
     @GetMapping("/chat/get/code")
     public Flux<ServerSentEvent<String>> genAppCode(@RequestParam Long appId, @RequestParam String message) {
         ThrowUtils.throwIf(appId == null || appId < 0, ResultEnum.PARAMS_ERROR, "请输入正确的应用 id");
@@ -146,6 +149,7 @@ public class AppController {
      * @return 应用列表
      */
     @PostMapping("/my/list/list/page/vo")
+    @RateLimit
     public Result<Page<AppVO>> getMyAppList(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
 
@@ -167,6 +171,7 @@ public class AppController {
      * @return 精选应用列表
      */
     @PostMapping("/good/list/page/vo")
+    @RateLimit
     public Result<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
         // 设置查询条件为精选应用
