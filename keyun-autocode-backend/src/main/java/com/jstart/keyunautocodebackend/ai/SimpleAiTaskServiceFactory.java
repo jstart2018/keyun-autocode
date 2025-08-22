@@ -16,7 +16,7 @@ import org.springframework.context.annotation.Scope;
  */
 @Slf4j
 @Configuration
-public class AiCodeGenTypeRoutingServiceFactory {
+public class SimpleAiTaskServiceFactory {
 
     @Resource
     private ApplicationContext applicationContext;
@@ -26,9 +26,9 @@ public class AiCodeGenTypeRoutingServiceFactory {
      */
     @Bean
     @Scope("prototype")
-    public AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService() {
+    public SimpleAiTaskService aiCodeGenTypeRoutingService() {
         ChatModel openAiChatModelPrototype = applicationContext.getBean("openAiChatModelPrototype", ChatModel.class);
-        return AiServices.builder(AiCodeGenTypeRoutingService.class)
+        return AiServices.builder(SimpleAiTaskService.class)
                 .chatModel(openAiChatModelPrototype)
                 .build();
     }

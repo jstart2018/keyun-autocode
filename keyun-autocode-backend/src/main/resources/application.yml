@@ -85,8 +85,8 @@ langchain4j:
       strict-json-schema: true
       response-format: json_object
       max-retries: 3
-    # 流式聊天模型配置（无结构化输出）
-    streaming-chat-model:
+    # 深度思考模型配置
+    reasoning-chat-model:
       base-url: https://api.deepseek.com/v1
       api-key: ${DEEPSEEK_API_KEY}
       model-name: deepseek-chat

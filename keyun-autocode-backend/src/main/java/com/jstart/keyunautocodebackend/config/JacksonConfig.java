@@ -2,6 +2,8 @@ package com.jstart.keyunautocodebackend.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import org.springframework.context.annotation.Bean;
@@ -33,13 +35,18 @@ public class JacksonConfig {
     @Bean
     public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter() {
         ObjectMapper objectMapper = new ObjectMapper();
-        JavaTimeModule module = new JavaTimeModule();
 
-        // 自定义 LocalDateTime 序列化格式为 ISO 8601
+        // 处理 Java 8 时间类型
+        JavaTimeModule timeModule = new JavaTimeModule();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-        module.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(formatter));
+        timeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(formatter));
+        objectMapper.registerModule(timeModule);
 
-        objectMapper.registerModule(module);
+        // 处理 Long 类型转字符串，避免前端精度丢失
+        SimpleModule longModule = new SimpleModule();
+        longModule.addSerializer(Long.class, ToStringSerializer.instance);
+        longModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
+        objectMapper.registerModule(longModule);
 
         return new MappingJackson2HttpMessageConverter(objectMapper);
     }

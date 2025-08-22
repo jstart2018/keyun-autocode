@@ -57,7 +57,7 @@ public class UserController {
     }
 
 
-    @GetMapping("/logout")
+    @PostMapping("/logout")
     public Result<Boolean> logout() {
         userService.getLoginUser(); // 确保用户已登录
         StpUtil.logout();

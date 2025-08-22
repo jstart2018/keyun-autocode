@@ -9,7 +9,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.jstart.keyunautocodebackend.ai.AiCodeGenTypeRoutingService;
+import com.jstart.keyunautocodebackend.ai.SimpleAiTaskService;
 import com.jstart.keyunautocodebackend.auth.RoleEnum;
 import com.jstart.keyunautocodebackend.constant.AppConstant;
 import com.jstart.keyunautocodebackend.core.AiCodeGeneratorFacade;
@@ -67,7 +67,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
     @Resource
     private ScreenshotService screenshotService;
     @Resource
-    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+    private SimpleAiTaskService simpleAiTaskService;
 
 
     /**
@@ -101,7 +101,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
                 (appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
 
         // 调用AI代码生成器（门面类）
-        Flux<String> useAiResult = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, genTypeEnum, appId);
+        Flux<String> useAiResult = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, genTypeEnum, app);
         // 持久化AI的回答
         return streamHandlerExecutor.doExecute(useAiResult, chatHistoryService, appId, loginUser, genTypeEnum);
 
@@ -259,9 +259,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         app.setInitPrompt(initPrompt);
         app.setUserId(userService.getLoginUser().getId());
         //让AI总结用户提示词，智能获取App名字
-        app.setAppName(aiCodeGenTypeRoutingService.getInitialPrompt(initPrompt));
+        app.setAppName(simpleAiTaskService.getInitialPrompt(initPrompt));
         // 让AI智能选择代码生成类型
-        app.setCodeGenType(aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt).getValue());
+        app.setCodeGenType(simpleAiTaskService.routeCodeGenType(initPrompt).getValue());
 
         ThrowUtils.throwIf(!this.save(app), ResultEnum.SYSTEM_ERROR, "应用创建失败");
 

@@ -14,6 +14,8 @@ import com.jstart.keyunautocodebackend.core.projectBuilder.VueProjectBuilder;
 import com.jstart.keyunautocodebackend.enums.CodeGenTypeEnum;
 import com.jstart.keyunautocodebackend.exception.BusinessException;
 import com.jstart.keyunautocodebackend.model.ResultEnum;
+import com.jstart.keyunautocodebackend.model.entity.App;
+import com.jstart.keyunautocodebackend.service.AppService;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolExecution;
@@ -44,11 +46,12 @@ public class AiCodeGeneratorFacade {
      * @param userMessage     用户提示词
      * @param codeGenTypeEnum 生成类型
      */
-    public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
+    public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum, App app) {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ResultEnum.SYSTEM_ERROR, "生成类型为空");
         }
         //获取 AI 代码生成服务实例
+        Long appId = app.getId();
         AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
         log.info("获取 AI 代码生成服务实例: {}", aiCodeGeneratorService.getClass().getSimpleName());
 
@@ -62,6 +65,10 @@ public class AiCodeGeneratorFacade {
                 yield parserAndSaveResult(result, codeGenTypeEnum, appId);
             }
             case VUE_PROJECT -> {
+                //润色用户首次输入，减少用户等待和成本
+                if (app.getInitPrompt().equals(userMessage)){
+                    userMessage = userMessage + "。去掉其中你觉得需要大量编码的功能，核心代码不超过90行！！！而且千万不能输出关于核心代码有多少行之类的提示信息！！";
+                }
                 TokenStream aiResult = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
                 // 处理 TokenStream 转换为 Flux<String>
                 yield processTokenStream(aiResult, appId);
@@ -124,7 +131,7 @@ public class AiCodeGeneratorFacade {
                         //sink.next("正在构建 Vue 项目，请稍候...");
                         // 同步构建 Vue 项目
                         String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
-                        vueProjectBuilder.buildProjectAsync(projectPath);
+                        vueProjectBuilder.buildProject(projectPath);
                         sink.complete();
                     })
                     .onError((Throwable error) -> {

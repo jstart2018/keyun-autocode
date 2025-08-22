@@ -7,26 +7,6 @@ import reactor.core.publisher.Flux;
 
 public interface AiCodeGeneratorService {
 
-    @SystemMessage(value = "你是一个专业的前端开发工程师，只使用原生html技术进行开发，请根据用户的需求生成相应的代码并以json格式输出。")
-    String chat(String userMessage);
-
-    /**
-     * 原生html代码生成
-     * @param userMessage 用户提示词
-     * @return HTML代码结果
-     */
-    @SystemMessage(fromResource = "prompt/codegen-html-system-prompt.txt")
-    HtmlCodeResult generateHtmlCode(String userMessage);
-
-    /**
-     * 多文件代码生成
-     * @param userMessage 用户提示词
-     * @return 多文件代码结果
-     */
-    @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
-    MultiFileCodeResult generateMultiFileCode(String userMessage);
-
-
     /**
      * 原生html代码生成
      * @param userMessage 用户提示词

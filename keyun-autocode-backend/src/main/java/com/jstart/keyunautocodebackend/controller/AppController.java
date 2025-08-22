@@ -66,7 +66,7 @@ public class AppController {
      * @return 响应流
      */
     @RateLimit
-    @GetMapping("/chat/get/code")
+    @GetMapping("/chat/gen/code")
     public Flux<ServerSentEvent<String>> genAppCode(@RequestParam Long appId, @RequestParam String message) {
         ThrowUtils.throwIf(appId == null || appId < 0, ResultEnum.PARAMS_ERROR, "请输入正确的应用 id");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ResultEnum.PARAMS_ERROR, "用户消息不能为空");
@@ -148,7 +148,7 @@ public class AppController {
      * @param appQueryRequest 应用查询请求参数
      * @return 应用列表
      */
-    @PostMapping("/my/list/list/page/vo")
+    @PostMapping("/my/list/page/vo")
     @RateLimit
     public Result<Page<AppVO>> getMyAppList(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");

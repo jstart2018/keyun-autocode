@@ -9,10 +9,10 @@ import dev.langchain4j.service.SystemMessage;
  *
  * @author jstart
  */
-public interface AiCodeGenTypeRoutingService {
+public interface SimpleAiTaskService {
 
     /**
-     * 根据用户需求智能选择代码生成类型
+     * 路由：根据用户需求智能选择代码生成类型
      *
      * @param userPrompt 用户输入的需求描述
      * @return 推荐的代码生成类型（框架自动结构化输出为 CodeGenTypeEnum 枚举）
@@ -21,9 +21,9 @@ public interface AiCodeGenTypeRoutingService {
     CodeGenTypeEnum routeCodeGenType(String userPrompt);
 
     /**
-     * 简化总结用户的提示词作为AppName
+     * 生成appName:简化总结用户的提示词作为appName
      * @param userMessage 用户输入的消息
-     * @return AppName
+     * @return appName
      */
     @SystemMessage(fromResource = "prompt/codegen-genAppName-system-prompt.txt")
     String getInitialPrompt(String userMessage);

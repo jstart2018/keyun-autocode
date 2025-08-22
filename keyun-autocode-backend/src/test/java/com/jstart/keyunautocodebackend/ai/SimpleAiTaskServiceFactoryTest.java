@@ -5,14 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @Slf4j
 @SpringBootTest
-class AiCodeGenTypeRoutingServiceFactoryTest {
+class SimpleAiTaskServiceFactoryTest {
 
     @Resource
-    private AiCodeGenTypeRoutingServiceFactory routingServiceFactory;
+    private SimpleAiTaskServiceFactory routingServiceFactory;
 
     @Test
     void aiCodeGenTypeRoutingService() throws InterruptedException {
@@ -27,7 +25,7 @@ class AiCodeGenTypeRoutingServiceFactoryTest {
             final String prompt = prompts[i];
             final int index = i + 1;
             threads[i] = Thread.ofVirtual().start(() -> {
-                AiCodeGenTypeRoutingService service = routingServiceFactory.aiCodeGenTypeRoutingService();
+                SimpleAiTaskService service = routingServiceFactory.aiCodeGenTypeRoutingService();
                 var result = service.routeCodeGenType(prompt);
                 log.info("线程 {}: {} -> {}", index, prompt, result.getValue());
             });
