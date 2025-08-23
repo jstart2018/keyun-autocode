@@ -58,7 +58,7 @@ public class ScreenshotServiceImpl implements ScreenshotService {
             return null;
         }
         // 生成 COS 对象键
-        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        String datePath = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"));
         String fileName = UUID.randomUUID().toString().substring(0, 8) + "_compressed.jpg";
         String cosKey = String.format("/screenshots/%s/%s", datePath, fileName);
         return cosManager.uploadFile(cosKey, screenshotFile);

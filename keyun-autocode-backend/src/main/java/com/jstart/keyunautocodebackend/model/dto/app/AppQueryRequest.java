@@ -43,7 +43,7 @@ public class AppQueryRequest extends PageRequest implements Serializable {
     /**
      * 优先级
      */
-    private Integer priority = 0;
+    private Integer priority;
 
     /**
      * 创建用户id

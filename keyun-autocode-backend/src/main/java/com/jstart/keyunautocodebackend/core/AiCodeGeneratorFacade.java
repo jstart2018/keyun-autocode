@@ -57,17 +57,25 @@ public class AiCodeGeneratorFacade {
 
         return switch (codeGenTypeEnum) {
             case HTML -> {
+                //润色用户首次输入，减少用户等待和成本
+                if (app.getInitPrompt().equals(userMessage)){
+                    userMessage = userMessage + "。代码不超过20行！！";
+                }
                 Flux<String> result = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
                 yield parserAndSaveResult(result, codeGenTypeEnum, appId);
             }
             case MULTI_FILE -> {
+                //润色用户首次输入，减少用户等待和成本
+                if (app.getInitPrompt().equals(userMessage)){
+                    userMessage = userMessage + "。代码不超过50行！！";
+                }
                 Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
                 yield parserAndSaveResult(result, codeGenTypeEnum, appId);
             }
             case VUE_PROJECT -> {
                 //润色用户首次输入，减少用户等待和成本
                 if (app.getInitPrompt().equals(userMessage)){
-                    userMessage = userMessage + "。去掉其中你觉得需要大量编码的功能，核心代码不超过90行！！！而且千万不能输出关于核心代码有多少行之类的提示信息！！";
+                    userMessage = userMessage + "。去掉其中你觉得需要大量编码的功能，保留其中最多三个功能，页面不得超过三个，代码不超过90行！！！而且千万不能输出关于核心代码有多少行、以及删除了哪些功能之类的提示信息！！否则系统即将崩溃！！！";
                 }
                 TokenStream aiResult = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
                 // 处理 TokenStream 转换为 Flux<String>

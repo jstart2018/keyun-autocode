@@ -90,7 +90,6 @@ public class JsonMessageStreamHandler {
                 if (toolId != null && !seenToolIds.contains(toolId)) {
                     // 第一次调用这个工具，记录 ID 并完整返回工具信息
                     seenToolIds.add(toolId);
-                    //todo 获取工具请求信息，待测试
                     BaseTool tool = toolManager.getTool(toolRequestMessage.getName());
                     return tool.generateToolRequestResponse();
                 } else {
@@ -102,7 +101,6 @@ public class JsonMessageStreamHandler {
                 ToolExecutedMessage toolExecutedMessage = JSONUtil.toBean(chunk, ToolExecutedMessage.class);
                 BaseTool tool = toolManager.getTool(toolExecutedMessage.getName());
                 JSONObject jsonObject = JSONUtil.parseObj(toolExecutedMessage.getArguments());
-                //todo 获取工具执行结果，待测试
                 String result = tool.generateToolExecutedResult(jsonObject);
                 // 输出前端和要持久化的内容
                 String output = String.format("\n\n%s\n\n", result);

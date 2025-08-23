@@ -196,7 +196,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         List<User> userList = this.list(userPage);
 
-        List<UserVO> userVOList = userList.stream().map(this::userToUserVO).toList();
+        List<UserVO> userVOList = userList.stream().map(this::getUserVO).toList();
 
         Page<UserVO> userVOPage = new Page<>(pageNum, pageSize, userPage.getTotal());
         userVOPage.setRecords(userVOList);
@@ -222,15 +222,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         ThrowUtils.throwIf(text.length() < 6, ResultEnum.PARAMS_ERROR, "不符合密码长度要求");
         String replace = text.replace(text.substring(1, 3), SALT);
         return SaSecureUtil.sha1(replace);
-    }
-
-    public UserVO userToUserVO(User user) {
-        if (user == null) {
-            return null;
-        }
-        UserVO uservo = new UserVO();
-        BeanUtils.copyProperties(user, uservo);
-        return uservo;
     }
 
 

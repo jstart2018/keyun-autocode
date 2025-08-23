@@ -101,6 +101,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
                 (appId, userMessage, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
 
         // 调用AI代码生成器（门面类）
+        try {
+            FileUtil.del(AppConstant.CODE_DEPLOY_ROOT_DIR+File.separator+app.getDeployKey());// 每次生成代码前，删除之前的部署文件，避免旧代码被访问
+        }catch (IORuntimeException e){
+            log.error("删除旧的部署文件失败，应用ID：{}，部署key：{}，错误信息：{}", app.getId(), app.getDeployKey(),e.getMessage());
+            throw new BusinessException(ResultEnum.SYSTEM_ERROR, "删除旧的部署文件失败，请稍后重试");
+        }
         Flux<String> useAiResult = aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, genTypeEnum, app);
         // 持久化AI的回答
         return streamHandlerExecutor.doExecute(useAiResult, chatHistoryService, appId, loginUser, genTypeEnum);
@@ -145,8 +151,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         //4、检查deployKey是否存在
         String deployKey = app.getDeployKey();
         if (StrUtil.isNotBlank(deployKey)) {
-            //如果deployKey已存在，直接返回可访问的URL
-            return String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+            String deployPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
+            if (FileUtil.exist(deployPath)) {
+                //部署目录存在，说明已经部署过，直接返回可访问的URL
+                return String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+            }
         }
         deployKey = RandomUtil.randomStringWithoutStr(6, "0oO");
 
@@ -194,7 +203,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         String appDeployUrl = String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
 
         //9、异步生成截图并上传到COS
-        //todo 待测试
         Thread.startVirtualThread(() -> {
             try {
                 // 生成并上传截图
@@ -206,7 +214,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
                             .set(App::getCover, imgUrl));
                 }
             } catch (Exception e) {
-                log.error("生成应用部署截图失败，应用ID：{}，错误信息：{}", appId, e.getMessage());
+                log.error("生成应用部署截图失败，应用ID：{}", appId, e);
             }
         });
 
@@ -395,7 +403,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
     public Page<App> listAppByPage(AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest.getPageSize() > 20, ResultEnum.OPERATION_ERROR, "每页最多只能查询20条数据");
         // 如果查询的不是精选应用，则要校验用户权限
-        if (!appQueryRequest.getPriority().equals(AppConstant.GOOD_APP_PRIORITY)) {
+        if (appQueryRequest.getPriority()!=null && !appQueryRequest.getPriority().equals(AppConstant.GOOD_APP_PRIORITY)) {
             // 不是管理员，则只能查询自己的应用
             if (!StpUtil.hasRole(RoleEnum.ADMIN.getValue())) {
                 if (appQueryRequest.getUserId() == null || !appQueryRequest.getUserId().equals(StpUtil.getLoginIdAsLong())) {

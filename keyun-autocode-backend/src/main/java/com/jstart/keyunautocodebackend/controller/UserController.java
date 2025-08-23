@@ -40,8 +40,8 @@ public class UserController {
     @PostMapping("/login")
     public Result<UserVO> login(@RequestBody UserLoginRequest userLoginRequest) {
         ThrowUtils.throwIf(StringUtils.isBlank(userLoginRequest.getUserAccount()), ResultEnum.PARAMS_ERROR, "账号不能为空");
-        ThrowUtils.throwIf(StringUtils.isBlank(userLoginRequest.getUserPassword()), ResultEnum.PARAMS_ERROR, "密码不能为空");
-        UserVO userVO = userService.doLogin(userLoginRequest.getUserAccount(), userLoginRequest.getUserPassword());
+        ThrowUtils.throwIf(StringUtils.isBlank(userLoginRequest.getPassword()), ResultEnum.PARAMS_ERROR, "密码不能为空");
+        UserVO userVO = userService.doLogin(userLoginRequest.getUserAccount(), userLoginRequest.getPassword());
 
         return Result.success(userVO);
     }

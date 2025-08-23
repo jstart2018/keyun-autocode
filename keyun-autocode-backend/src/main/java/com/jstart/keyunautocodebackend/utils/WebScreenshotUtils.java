@@ -31,6 +31,11 @@ public class WebScreenshotUtils {
         final int DEFAULT_WIDTH = 1600;
         final int DEFAULT_HEIGHT = 900;
         webDriver = initChromeDriver(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+        // 使用国内镜像
+        System.setProperty("wdm.timeout", "500");
+        System.setProperty("wdm.retryCount", "3");
+        // 设置国内镜像
+        System.setProperty("wdm.chromeDownloadUrl", "https://npmmirror.com/mirrors/chromedriver/");
     }
 
 
@@ -51,7 +56,7 @@ public class WebScreenshotUtils {
             FileUtil.mkdir(rootPath);
             // 图片后缀
             final String IMAGE_SUFFIX = ".png";
-            // 原始截图文件路径
+            // 原始截图文件本地存放路径
             String imageSavePath = rootPath + File.separator + RandomUtil.randomNumbers(5) + IMAGE_SUFFIX;
             // 访问网页
             webDriver.get(webUrl);
@@ -89,7 +94,7 @@ public class WebScreenshotUtils {
     private static WebDriver initChromeDriver(int width, int height) {
         try {
             // 自动管理 ChromeDriver
-            WebDriverManager.chromedriver().setup();
+            WebDriverManager.chromedriver().useMirror().setup();
             // 配置 Chrome 选项
             ChromeOptions options = new ChromeOptions();
             // 无头模式

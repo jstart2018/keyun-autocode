@@ -281,7 +281,7 @@ public class AppController {
         ThrowUtils.throwIf(app == null, ResultEnum.NOT_FOUND_ERROR, "应用不存在");
         // 3. 权限校验：只有应用创建者可以下载代码
         Long loginUserId = StpUtil.getLoginIdAsLong();
-        if (!app.getUserId().equals(loginUserId) || StpUtil.hasRole(RoleEnum.ADMIN.getValue())) {
+        if (!app.getUserId().equals(loginUserId) || !StpUtil.hasRole(RoleEnum.ADMIN.getValue())) {
             throw new BusinessException(ResultEnum.NO_AUTH_ERROR, "只有本人可下载代码");
         }
         // 4. 构建应用代码目录路径（生成目录，非部署目录）
