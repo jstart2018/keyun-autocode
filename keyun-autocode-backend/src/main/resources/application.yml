@@ -5,7 +5,7 @@ spring:
     active: local # 激活环境，获取秘钥key
   data:
     redis:
-      database: 2
+      database: 0
       host: 127.0.0.1
       port: 6379
       ttl: 3600 # 记忆过期时间
@@ -26,52 +26,6 @@ spring:
     url: jdbc:mysql://localhost:3306/keyun_autocode?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
     username: root
     password: 123456
-
-server:
-  port: 8123
-  servlet:
-    context-path: /api
-# springdoc-openapi
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: alpha
-  api-docs:
-    path: /v3/api-docs
-  group-configs:
-    - group: 'default'
-      paths-to-match: '/**'
-      packages-to-scan: com.jstart.keyunautocodebackend.controller
-# knife4j
-knife4j:
-  enable: true
-  setting:
-    language: zh_cn
-
-mybatis-plus:
-  configuration:
-    map-underscore-to-camel-case: true # 开启驼峰命名
-  global-config:
-    db-config:
-      logic-delete-field: is_deleted
-      logic-delete-value: now()
-      logic-not-delete-value: 'null'
-# 日志配置
-logging:
-  level:
-    # 替换为你的 mapper 接口所在的包路径
-    com.jstart.keyunautocodebackend.mapper: debug  # 输出该包下的 SQL 日志
-    # 可选：MyBatis 核心日志（如需更详细的信息）
-    #com.baomidou.mybatisplus: info
-
-# Sa-Token: https://sa-token.cc
-sa-token:
-  token-name: keyun
-  timeout: 2592000
-  token-style: uuid
-  is-log: true
-
 # AI
 langchain4j:
   open-ai:
@@ -93,6 +47,34 @@ langchain4j:
       log-requests: true
       log-responses: true
 
+server:
+  port: 8123
+  servlet:
+    context-path: /api
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true # 开启驼峰命名
+  global-config:
+    db-config:
+      logic-delete-field: is_deleted
+      logic-delete-value: now()
+      logic-not-delete-value: 'null'
+# 日志配置
+logging:
+  level:
+    # 替换为你的 mapper 接口所在的包路径
+    com.jstart.keyunautocodebackend.mapper: debug  # 输出该包下的 SQL 日志
+    # 可选：MyBatis 核心日志（如需更详细的信息）
+    #com.baomidou.mybatisplus: info
+
+# Sa-Token: https://sa-token.cc
+sa-token:
+  token-name: keeToken
+  timeout: 2592000
+  token-style: uuid
+  is-log: true
+
 # 添加 COS 对象存储配置（需要从腾讯云获取）
 cos:
   client:
@@ -101,3 +83,22 @@ cos:
     secretKey: ${cos.secretKey}
     region: ${cos.region}
     bucket: ${cos.bucket}
+
+# springdoc-openapi
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.jstart.keyunautocodebackend.controller
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+

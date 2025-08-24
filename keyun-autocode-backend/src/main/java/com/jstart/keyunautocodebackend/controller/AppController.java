@@ -16,13 +16,10 @@ import com.jstart.keyunautocodebackend.model.ResultEnum;
 import com.jstart.keyunautocodebackend.model.dto.DeleteRequest;
 import com.jstart.keyunautocodebackend.model.dto.app.*;
 import com.jstart.keyunautocodebackend.model.entity.App;
-import com.jstart.keyunautocodebackend.model.entity.User;
 import com.jstart.keyunautocodebackend.model.vo.AppVO;
 import com.jstart.keyunautocodebackend.service.AppService;
 import com.jstart.keyunautocodebackend.service.ProjectDownloadService;
-import com.jstart.keyunautocodebackend.service.UserService;
 import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -53,10 +50,6 @@ public class AppController {
         Long appId = appService.createApp(appAddRequest.getInitPrompt());
         return Result.success(appId);
     }
-
-    @Resource
-    private UserService userService;
-
 
     /**
      * 生成应用代码（流式）
@@ -149,7 +142,6 @@ public class AppController {
      * @return 应用列表
      */
     @PostMapping("/my/list/page/vo")
-    @RateLimit
     public Result<Page<AppVO>> getMyAppList(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
 
@@ -171,7 +163,6 @@ public class AppController {
      * @return 精选应用列表
      */
     @PostMapping("/good/list/page/vo")
-    @RateLimit
     public Result<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ResultEnum.PARAMS_ERROR, "请求参数不能为空");
         // 设置查询条件为精选应用
