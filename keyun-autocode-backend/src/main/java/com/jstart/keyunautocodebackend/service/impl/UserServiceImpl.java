@@ -207,9 +207,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteUserById(Long id) {
-        if (!StpUtil.hasRole(RoleEnum.ADMIN.getValue())){
-            User loginUser = this.getLoginUser();
-            ThrowUtils.throwIf(!loginUser.getId().equals(id), ResultEnum.OPERATION_ERROR, "只能删除自己的账号");
+        ThrowUtils.throwIf(!StpUtil.hasRole(RoleEnum.ADMIN.getValue()), ResultEnum.NO_AUTH_ERROR, "无权限操作");
+        User user = this.getById(id);// 校验用户是否存在
+        ThrowUtils.throwIf(user == null, ResultEnum.NOT_FOUND_ERROR, "用户不存在");
+        if (!StpUtil.hasRole(RoleEnum.SUPER_ADMIN.getValue())){
+            if (user.getRole().equals(RoleEnum.ADMIN.getKey())) {
+                throw new BusinessException(ResultEnum.OPERATION_ERROR, "无此权限");
+            }
+        }
+        if (user.getRole().equals(RoleEnum.SUPER_ADMIN.getKey())) {
+            throw new BusinessException(ResultEnum.OPERATION_ERROR, "无此权限");
         }
         boolean result = appService.removeAppByUserId(id);// 删除用户的应用
         StpUtil.logout(id);

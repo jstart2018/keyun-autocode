@@ -309,8 +309,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         App oldApp = this.getById(appId);
         ThrowUtils.throwIf(oldApp == null, ResultEnum.NOT_FOUND_ERROR, "应用不存在");
         // 2、校验是否为应用的创建者
-        User loginUser = userService.getLoginUser();
-        ThrowUtils.throwIf(!oldApp.getUserId().equals(loginUser.getId()), ResultEnum.NO_AUTH_ERROR, "无权限操作该应用");
+        if (!StpUtil.hasRole(RoleEnum.ADMIN.getValue())){
+            User loginUser = userService.getLoginUser();
+            ThrowUtils.throwIf(!oldApp.getUserId().equals(loginUser.getId()), ResultEnum.NO_AUTH_ERROR, "无权限操作该应用");
+        }
 
         //3、删除该应用的对话记忆
         boolean delChatHistoryResult = chatHistoryService.deleteByAppId(oldApp.getId());
