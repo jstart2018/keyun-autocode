@@ -95,19 +95,23 @@ public class AiCodeGeneratorServiceFactory {
         chatHistoryService.loadHistoryToRedis(appId, chatMemory, 20);
 
         // 每次创建新的 AiCodeGeneratorService 实例时，都创建新的StreamingChatModel实例，避免StreamingChatModel串行执行问题
-        StreamingChatModel openAiStreamingChatModel = applicationContext.getBean("openAiStreamingChatModelPrototype", StreamingChatModel.class);
-        StreamingChatModel reasoningStreamingChatModel = applicationContext.getBean("reasoningStreamingChatModel", StreamingChatModel.class);
+        StreamingChatModel qwFlashStreamingModel = applicationContext.getBean("qwFlashStreamingModel", StreamingChatModel.class);
+        StreamingChatModel chatStreamingModel = applicationContext.getBean("chatStreamingModel", StreamingChatModel.class);
+        StreamingChatModel reasoningStreamingModel = applicationContext.getBean("reasoningStreamingModel", StreamingChatModel.class);
 
         return switch (codeGenTypeEnum) {
-            case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
-                    .chatModel(chatModel)
-                    .streamingChatModel(openAiStreamingChatModel)
+            case HTML -> AiServices.builder(AiCodeGeneratorService.class)
+                    .streamingChatModel(qwFlashStreamingModel)
+                    .chatMemory(chatMemory)
+                    .inputGuardrails(new PromptSafetyInputGuardrail())
+                    .build();
+            case MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
+                    .streamingChatModel(chatStreamingModel)
                     .chatMemory(chatMemory)
                     .inputGuardrails(new PromptSafetyInputGuardrail())
                     .build();
             case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
-                    .chatModel(chatModel)
-                    .streamingChatModel(reasoningStreamingChatModel)
+                    .streamingChatModel(reasoningStreamingModel)
                     .chatMemoryProvider(memoryId -> chatMemory)
                     .inputGuardrails(new PromptSafetyInputGuardrail())
                     .tools(toolManager.getAllTools()) // 注册所有工具

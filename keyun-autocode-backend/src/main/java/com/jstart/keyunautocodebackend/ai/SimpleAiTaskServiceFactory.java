@@ -27,9 +27,9 @@ public class SimpleAiTaskServiceFactory {
     @Bean
     @Scope("prototype")
     public SimpleAiTaskService aiCodeGenTypeRoutingService() {
-        ChatModel openAiChatModelPrototype = applicationContext.getBean("openAiChatModelPrototype", ChatModel.class);
+        ChatModel qwFlashModel = applicationContext.getBean("qwFlashModel", ChatModel.class);
         return AiServices.builder(SimpleAiTaskService.class)
-                .chatModel(openAiChatModelPrototype)
+                .chatModel(qwFlashModel)
                 .build();
     }
 }
