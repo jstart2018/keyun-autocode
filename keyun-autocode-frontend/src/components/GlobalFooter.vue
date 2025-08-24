@@ -3,12 +3,12 @@
     <div class="footer-content">
       <p class="copyright">
         <a
-          href="https://www.codefather.cn"
+          href="https://www.baidu.cn"
           target="_blank"
           rel="noopener noreferrer"
           class="author-link"
         >
-          jstart所有
+
         </a>
       </p>
     </div>

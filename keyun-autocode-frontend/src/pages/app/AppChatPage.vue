@@ -330,7 +330,7 @@ const loadChatHistory = async (isLoadMore = false) => {
             }))
             .reverse() // 反转数组，让老消息在前
         if (isLoadMore) {
-          // 加载更多时，将历史��息添加到开头
+          // 加载更多时，将历消息添加到开头
           messages.value.unshift(...historyMessages)
         } else {
           // 初始加载，直接设置消息列表
@@ -387,9 +387,9 @@ const fetchAppInfo = async () => {
 
             // 根据不同的代码生成类型显示不同的提示
             if (appInfo.value.codeGenType === CodeGenTypeEnum.VUE_PROJECT) {
-              content = 'Vue项目模式生成时间可能过久，请耐心等待';
+              content = 'Vue项目模式生成时间可能过久，请耐心等待。点击部署后可生成应用封面截图';
             } else {
-              content = '生成模式已确定，后续不可修改生成模式。且生成的网站修改时会全量修改，可能等待会较慢';
+              content = '生成模式已确定，后续不可修改生成模式。点击部署后可生成应用封面截图。后续修改时会全量修改，等待可能会较慢';
             }
 
             Modal.info({

@@ -3,7 +3,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
-import { addApp, listMyAppVoByPage, listGoodAppVoByPage } from '@/api/appController'
+import { addApp, listGoodAppVoByPage } from '@/api/appController'
 import { getDeployUrl } from '@/config/env'
 import AppCard from '@/components/AppCard.vue'
 
@@ -13,14 +13,6 @@ const loginUserStore = useLoginUserStore()
 // 用户提示词
 const userPrompt = ref('')
 const creating = ref(false)
-
-// 我的应用数据
-const myApps = ref<API.AppVO[]>([])
-const myAppsPage = reactive({
-  current: 1,
-  pageSize: 6,
-  total: 0,
-})
 
 // 精选应用数据
 const featuredApps = ref<API.AppVO[]>([])
@@ -34,8 +26,6 @@ const featuredAppsPage = reactive({
 const setPrompt = (prompt: string) => {
   userPrompt.value = prompt
 }
-
-// 优化提示词功能已移除
 
 // 创建应用
 const createApp = async () => {
@@ -72,29 +62,6 @@ const createApp = async () => {
   }
 }
 
-// 加载我的应用
-const loadMyApps = async () => {
-  if (!loginUserStore.loginUser.id) {
-    return
-  }
-
-  try {
-    const res = await listMyAppVoByPage({
-      pageNum: myAppsPage.current,
-      pageSize: myAppsPage.pageSize,
-      sortField: 'createTime',
-      sortOrder: 'desc',
-    })
-
-    if (res.data.code === 0 && res.data.data) {
-      myApps.value = res.data.data.records || []
-      myAppsPage.total = res.data.data.totalRow || 0
-    }
-  } catch (error) {
-    console.error('加载我的应用失败：', error)
-  }
-}
-
 // 加载精选应用
 const loadFeaturedApps = async () => {
   try {
@@ -107,7 +74,7 @@ const loadFeaturedApps = async () => {
 
     if (res.data.code === 0 && res.data.data) {
       featuredApps.value = res.data.data.records || []
-      featuredAppsPage.total = res.data.data.totalRow || 0
+      featuredAppsPage.total = parseInt(res.data.data.total) || 0
     }
   } catch (error) {
     console.error('加载精选应用失败：', error)
@@ -129,11 +96,8 @@ const viewWork = (app: API.AppVO) => {
   }
 }
 
-// 格式化时间函数已移除，不再需要显示创建时间
-
 // 页面加载时获取数据
 onMounted(() => {
-  loadMyApps()
   loadFeaturedApps()
 
   // 鼠标跟随光效
@@ -169,7 +133,7 @@ onMounted(() => {
       <div class="input-section">
         <a-textarea
           v-model:value="userPrompt"
-          placeholder="帮我创建个人博客网站"
+          placeholder="输入你所想. . ."
           :rows="4"
           :maxlength="1000"
           class="prompt-input"
@@ -189,10 +153,28 @@ onMounted(() => {
           type="default"
           @click="
             setPrompt(
-              '设计一个简洁现代的个人介绍网站，包含个人简介、技能展示、项目经验和联系方式等模块。采用响应式设计，确保在各种设备上都有良好的浏览体验。',
+              '帮我创建一个简单的个人介绍网站，包含个人简介、技能展示、项目经验和联系方式等模块。',
             )
           "
-          >个人介绍网站</a-button
+        >个人介绍网站（HTML）</a-button
+        >
+        <a-button
+          type="default"
+          @click="
+            setPrompt(
+              '帮我创建一个摄影作品展示网站，包含首页、作品集、关于我、联系方式等页面。设计风格简洁大气，突出图片展示效果。',
+            )
+          "
+          >作品展示网(HTML+CSS+JS)</a-button
+        >
+        <a-button
+          type="default"
+          @click="
+            setPrompt(
+              '制作一个精美的作品展示网站，适合摄影师、画家等创作者。包含作品作品栏、项目详情页、个人简历、联系方式等模块。采用瀑布流或网格布局展示作品，支持图片放大预览和作品分类筛选。整体样式高端大气，注重视觉效果和用户体验。',
+            )
+          "
+        >作品展示网(vue)</a-button
         >
         <a-button
           type="default"
@@ -212,39 +194,6 @@ onMounted(() => {
           "
           >在线商城</a-button
         >
-        <a-button
-          type="default"
-          @click="
-            setPrompt(
-              '制作一个精美的作品展示网站，适合设计师、摄影师、艺术家等创作者。包含作品画廊、项目详情页、个人简历、联系方式等模块。采用瀑布流或网格布局展示作品，支持图片放大预览和作品分类筛选。',
-            )
-          "
-          >作品展示网站</a-button
-        >
-      </div>
-
-      <!-- 我的作品 -->
-      <div class="section">
-        <h2 class="section-title">我的作品</h2>
-        <div class="app-grid">
-          <AppCard
-            v-for="app in myApps"
-            :key="app.id"
-            :app="app"
-            @view-chat="viewChat"
-            @view-work="viewWork"
-          />
-        </div>
-        <div class="pagination-wrapper">
-          <a-pagination
-            v-model:current="myAppsPage.current"
-            v-model:page-size="myAppsPage.pageSize"
-            :total="myAppsPage.total"
-            :show-size-changer="false"
-            :show-total="(total: number) => `共 ${total} 个应用`"
-            @change="loadMyApps"
-          />
-        </div>
       </div>
 
       <!-- 精选案例 -->
@@ -529,14 +478,6 @@ onMounted(() => {
   font-weight: 600;
   margin-bottom: 32px;
   color: #1e293b;
-}
-
-/* 我的作品网格 */
-.app-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
-  margin-bottom: 32px;
 }
 
 /* 精选案例网格 */
