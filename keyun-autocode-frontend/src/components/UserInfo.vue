@@ -1,6 +1,6 @@
 <template>
   <div class="user-info">
-    <a-avatar :src="user?.avatar" :size="size">
+    <a-avatar :src="getUserAvatar(user)" :size="size">
       {{ user?.username?.charAt(0) || 'U' }}
     </a-avatar>
     <span v-if="showName" class="user-name">{{ user?.username || '未知用户' }}</span>
@@ -8,6 +8,8 @@
 </template>
 
 <script setup lang="ts">
+import { getUserAvatar } from '@/utils/avatar'
+
 interface Props {
   user?: API.UserVO
   size?: number | 'small' | 'default' | 'large'

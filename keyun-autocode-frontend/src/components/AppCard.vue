@@ -14,7 +14,7 @@
     </div>
     <div class="app-info">
       <div class="app-info-left">
-        <a-avatar :src="app.user?.avatar" :size="40">
+        <a-avatar :src="getUserAvatar(app.user)" :size="40">
           {{ app.user?.username?.charAt(0) || 'U' }}
         </a-avatar>
       </div>
@@ -29,6 +29,8 @@
 </template>
 
 <script setup lang="ts">
+import { getUserAvatar } from '@/utils/avatar'
+
 interface Props {
   app: API.AppVO
   featured?: boolean

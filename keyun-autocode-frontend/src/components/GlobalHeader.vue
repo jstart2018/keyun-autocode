@@ -25,7 +25,7 @@
           <div v-if="loginUserStore.loginUser.id">
             <a-dropdown>
               <a-space>
-                <a-avatar :src="loginUserStore.loginUser.avatar" />
+                <a-avatar :src="getUserAvatar(loginUserStore.loginUser)" />
                 {{ loginUserStore.loginUser.username ?? '无名' }}
               </a-space>
               <template #overlay>
@@ -54,6 +54,7 @@ import { type MenuProps, message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
 import { userLogout } from '@/api/userController.ts'
 import { LogoutOutlined, HomeOutlined, AppstoreOutlined } from '@ant-design/icons-vue'
+import { getUserAvatar } from '@/utils/avatar'
 
 const loginUserStore = useLoginUserStore()
 const router = useRouter()

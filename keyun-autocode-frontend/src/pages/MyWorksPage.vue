@@ -36,7 +36,7 @@ const loadMyApps = async () => {
 
     if (res.data.code === 0 && res.data.data) {
       myApps.value = res.data.data.records || []
-      myAppsPage.total = parseInt(res.data.data.total) || 0
+      myAppsPage.total = parseInt(res.data.data.total || '0') || 0
     }
   } catch (error) {
     console.error('加载我的应用失败：', error)

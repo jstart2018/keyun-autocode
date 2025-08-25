@@ -13,7 +13,7 @@
       </a-form-item>
     </a-form>
     <a-divider />
-    <!-- 表格 -->
+    <!-- 表��� -->
     <a-table
       :columns="columns"
       :data-source="data"
@@ -22,7 +22,7 @@
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'avatar'">
-          <a-image :src="record.avatar" :width="120" />
+          <a-image :src="getAvatarUrl(record.avatar)" :width="120" />
         </template>
         <template v-else-if="column.dataIndex === 'role'">
           <div v-if="record.role === 'super_admin'">
@@ -50,6 +50,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { deleteUser, listUserVoByPage } from '@/api/userController.ts'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
+import { getAvatarUrl } from '@/utils/avatar'
 
 const columns = [
   {

@@ -173,7 +173,7 @@ const fetchData = async () => {
     })
     if (res.data.data) {
       data.value = res.data.data.records ?? []
-      total.value = res.data.data.totalRow ?? 0
+      total.value = parseInt(res.data.data.total || '0') || 0
     } else {
       message.error('获取数据失败，' + res.data.message)
     }
@@ -258,7 +258,7 @@ const deleteApp = async (id: number | undefined) => {
   if (!id) return
 
   try {
-    const res = await deleteAppByAdmin({ id })
+    const res = await deleteAppByAdmin({ id: String(id) })
     if (res.data.code === 0) {
       message.success('删除成功')
       // 刷新数据

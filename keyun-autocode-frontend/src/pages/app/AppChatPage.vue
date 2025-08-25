@@ -52,7 +52,7 @@
             <div v-if="message.type === 'user'" class="user-message">
               <div class="message-content">{{ message.content }}</div>
               <div class="message-avatar">
-                <a-avatar :src="loginUserStore.loginUser.avatar" />
+                <a-avatar :src="getUserAvatar(loginUserStore.loginUser)" />
               </div>
             </div>
             <div v-else class="ai-message">
@@ -222,6 +222,7 @@ import {
 import { listAppChatHistory } from '@/api/chatHistoryController'
 import { CodeGenTypeEnum, formatCodeGenType } from '@/utils/codeGenTypes'
 import request from '@/request'
+import { getUserAvatar } from '@/utils/avatar'
 
 import MarkdownRenderer from '@/components/MarkdownRenderer.vue'
 import AppDetailModal from '@/components/AppDetailModal.vue'
@@ -376,17 +377,17 @@ const fetchAppInfo = async () => {
 
       // 先加载对话历史
       await loadChatHistory()
-      // 如果有至少2条对话记录，展示对应的网站
+      // 如果有��少2条对话记录，展示对应的网站
       if (messages.value.length >= 2) {
         updatePreview()
       }else {
         // 根据不同的代码生成类型显示不同的等待提示
-        if (appInfo.value.codeGenType) {
+        if (appInfo.value && appInfo.value.codeGenType) {
           setTimeout(() => {
             let content = '网站生成中，请耐心等待';
 
             // 根据不同的代码生成类型显示不同的提示
-            if (appInfo.value.codeGenType === CodeGenTypeEnum.VUE_PROJECT) {
+            if (appInfo.value && appInfo.value.codeGenType === CodeGenTypeEnum.VUE_PROJECT) {
               content = 'Vue项目模式生成时间可能过久，请耐心等待。点击部署后可生成应用封面截图';
             } else {
               content = '生成模式已确定，后续不可修改生成模式。点击部署后可生成应用封面截图。后续修改时会全量修改，等待可能会较慢';
@@ -730,7 +731,7 @@ const deleteApp = async () => {
   if (!appInfo.value?.id) return
 
   try {
-    const res = await deleteAppApi({ id: appInfo.value.id })
+    const res = await deleteAppApi({ id: String(appInfo.value.id) })
     if (res.data.code === 0) {
       message.success('删除成功')
       appDetailVisible.value = false

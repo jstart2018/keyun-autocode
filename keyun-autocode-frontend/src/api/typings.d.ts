@@ -139,7 +139,7 @@ declare namespace API {
   }
 
   type DeleteRequest = {
-    id?: number
+    id?: string
   }
 
   type downloadAppCodeParams = {
@@ -181,6 +181,10 @@ declare namespace API {
 
   type PageAppVO = {
     records?: AppVO[]
+    total?: string
+    size?: string
+    current?: string
+    pages?: string
     pageNumber?: number
     pageSize?: number
     totalPage?: number

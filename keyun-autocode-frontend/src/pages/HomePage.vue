@@ -56,7 +56,7 @@ const createApp = async () => {
     }
   } catch (error) {
     console.error('创建应用失败：', error)
-    message.error('创建失败，请重试')
+    message.error('创建应用失败，请重试')
   } finally {
     creating.value = false
   }
@@ -74,7 +74,7 @@ const loadFeaturedApps = async () => {
 
     if (res.data.code === 0 && res.data.data) {
       featuredApps.value = res.data.data.records || []
-      featuredAppsPage.total = parseInt(res.data.data.total) || 0
+      featuredAppsPage.total = parseInt(res.data.data.total || '0') || 0
     }
   } catch (error) {
     console.error('加载精选应用失败：', error)
