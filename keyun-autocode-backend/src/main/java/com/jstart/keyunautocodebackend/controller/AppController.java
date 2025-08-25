@@ -58,7 +58,6 @@ public class AppController {
      * @param message 用户消息
      * @return 响应流
      */
-    @RateLimit
     @GetMapping("/chat/gen/code")
     public Flux<ServerSentEvent<String>> genAppCode(@RequestParam Long appId, @RequestParam String message) {
         ThrowUtils.throwIf(appId == null || appId < 0, ResultEnum.PARAMS_ERROR, "请输入正确的应用 id");

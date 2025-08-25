@@ -6,10 +6,11 @@ spring:
   data:
     redis:
       database: 0
-      host: 127.0.0.1
-      port: 6379
+      host: ${redis.host}
+      port: ${redis.port}
       ttl: 3600 # 记忆过期时间
-      password:
+      username: ${redis.username:} # 如果没有用户名，留空
+      password: ${redis.password:} # 如果没有密码，留空
       timeout: 10s
       lettuce:
         pool:
@@ -21,11 +22,12 @@ spring:
           max-idle: 10
           # 连接池中的最小空闲连接
           min-idle: 0
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/keyun_autocode?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
-    username: root
-    password: 123456
+    url: jdbc:mysql://${datasource.host}:${datasource.port}/keyun_autocode?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+    username: ${datasource.username}
+    password: ${datasource.password}
 # AI
 langchain4j:
   open-ai:
@@ -34,8 +36,9 @@ langchain4j:
       base-url: https://api.deepseek.com/v1
       api-key: ${DEEPSEEK_API_KEY}
       model-name: deepseek-chat
-      log-requests: true
-      log-responses: true
+      #生产环境关闭日志
+      log-requests: ${ai.reqLog:true}
+      log-responses: ${ai.respLog:true}
       max-tokens: 8192
       strict-json-schema: true
       response-format: json_object
@@ -44,8 +47,13 @@ langchain4j:
       base-url: ${dashscope.base-url}
       api-key: ${dashscope.api-key}
       model-name: ${dashscope.model-name}
-      log-requests: true
-      log-responses: true
+      log-requests: ${ai.reqLog:true}
+      log-responses: ${ai.respLog:true}
+
+#响应给前端app部署地址（本地：http://localhost:8123 ，远程：http://{ip或域名}/dish）：
+app:
+  deploy:
+    host: ${server.host}
 
 server:
   port: 8123
@@ -98,6 +106,11 @@ springdoc:
       packages-to-scan: com.jstart.keyunautocodebackend.controller
 # knife4j
 knife4j:
+  basic:
+    enable: ${knife4j.enable:false}
+    #线上环境要改成正式账号密码，否则谁都能访问
+    username: ${knife4j.username:root}
+    password: ${knife4j.password:123456}
   enable: true
   setting:
     language: zh_cn

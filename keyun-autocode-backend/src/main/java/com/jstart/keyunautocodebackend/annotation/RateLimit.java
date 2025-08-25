@@ -26,7 +26,7 @@ public @interface RateLimit {
     /**
      * 时间窗口，单位秒
      */
-    int rateInterval() default 60;
+    int rateInterval() default 30;
 
     /**
      * 限流类型

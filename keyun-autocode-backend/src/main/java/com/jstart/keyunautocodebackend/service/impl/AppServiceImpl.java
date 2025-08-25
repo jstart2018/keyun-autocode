@@ -33,6 +33,7 @@ import com.jstart.keyunautocodebackend.service.UserService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -53,6 +54,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         implements AppService {
+
+    // 部署的app可访问地址
+    @Value("${app.deploy.host}")
+    private String deployAppAccessibleUrl;
 
     @Resource
     private UserService userService;
@@ -154,7 +159,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
             String deployPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
             if (FileUtil.exist(deployPath)) {
                 //部署目录存在，说明已经部署过，直接返回可访问的URL
-                return String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+                return String.format("%s/%s", deployAppAccessibleUrl, deployKey);
             }
         }
         deployKey = RandomUtil.randomStringWithoutStr(6, "0oO");
@@ -200,7 +205,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>
         ThrowUtils.throwIf(!updateResult, ResultEnum.SYSTEM_ERROR, "更新应用部署信息失败");
 
         //8、生成可访问的URL
-        String appDeployUrl = String.format("%s/%s", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        String appDeployUrl = String.format("%s/%s", deployAppAccessibleUrl, deployKey);
 
         //9、异步生成截图并上传到COS
         Thread.startVirtualThread(() -> {

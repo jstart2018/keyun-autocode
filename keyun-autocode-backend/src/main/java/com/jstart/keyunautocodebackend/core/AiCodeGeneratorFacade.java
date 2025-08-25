@@ -59,7 +59,7 @@ public class AiCodeGeneratorFacade {
             case HTML -> {
                 //润色用户首次输入，减少用户等待和成本
                 if (app.getInitPrompt().equals(userMessage)){
-                    userMessage = userMessage + "。代码不超过20行！！而且千万不能输出关于核心代码有多少行、以及删除了哪些功能之类的提示信息！！否则系统即将崩溃！！！";
+                    userMessage = userMessage + "。代码不超过50行！！而且千万不能输出关于核心代码有多少行、以及删除了哪些功能之类的提示信息！！否则系统即将崩溃！！！";
                 }
                 Flux<String> result = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
                 yield parserAndSaveResult(result, codeGenTypeEnum, appId);
@@ -67,7 +67,7 @@ public class AiCodeGeneratorFacade {
             case MULTI_FILE -> {
                 //润色用户首次输入，减少用户等待和成本
                 if (app.getInitPrompt().equals(userMessage)){
-                    userMessage = userMessage + "。代码不超过50行！！而且千万不能输出关于核心代码有多少行、以及删除了哪些功能之类的提示信息！！否则系统即将崩溃！！！";
+                    userMessage = userMessage + "。画面要精美、吸引人，要有视觉冲击力，要与众不同。代码不超过150行！！而且千万不能输出关于核心代码有多少行、以及删除了哪些功能之类的提示信息！！否则系统即将崩溃！！！";
                 }
                 Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
                 yield parserAndSaveResult(result, codeGenTypeEnum, appId);
